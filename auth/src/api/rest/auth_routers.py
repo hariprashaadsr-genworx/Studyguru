@@ -2,11 +2,12 @@ import base64
 import json
 import logging
 from urllib.parse import urlencode
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config.settings import settings
 from src.core.auth.oauth_bearer import get_current_user
@@ -23,6 +24,8 @@ from src.schemas.auth import (
     UserOut,
 )
 
+from src.core.auth.jwt_handler import verify_access_token
+
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 logger = logging.getLogger("studyguru.auth")
 
@@ -33,28 +36,30 @@ logger = logging.getLogger("studyguru.auth")
     "/signup",
     response_model=TokenResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Register a new account with email + password",
 )
-def signup(payload: SignupRequest, db: Session = Depends(get_db)):
-    if svc.get_user_by_email(db, payload.email):
+async def signup(payload: SignupRequest, db: AsyncSession = Depends(get_db)):
+
+    if await svc.get_user_by_email(db, payload.email):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="An account with this email already exists.",
         )
-    user = svc.create_user(db, payload.name, payload.email, payload.password)
-    tokens = svc.issue_token_pair(db, user)
+
+    user = await svc.create_user(
+        db, payload.name, payload.email, payload.password
+    )
+
+    tokens = await svc.issue_token_pair(db, user)
+
     return TokenResponse(**tokens, user=UserOut.model_validate(user))
 
 
 # ── POST /login ───────────────────────────────────────────────────────────────
 
-@router.post(
-    "/login",
-    response_model=TokenResponse,
-    summary="Login with email + password",
-)
-def login(payload: LoginRequest, db: Session = Depends(get_db)):
-    user = svc.get_user_by_email(db, payload.email)
+@router.post("/login", response_model=TokenResponse)
+async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
+
+    user = await svc.get_user_by_email(db, payload.email)
 
     _invalid = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -63,51 +68,45 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
     if not user or not user.hashed_password:
         raise _invalid
-    if not svc.verify_password(payload.password, user.hashed_password):
+
+    if not await svc.verify_password(payload.password, user.hashed_password):
         raise _invalid
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="This account has been deactivated.",
         )
 
-    tokens = svc.issue_token_pair(db, user)
+    tokens = await svc.issue_token_pair(db, user)
+
     return TokenResponse(**tokens, user=UserOut.model_validate(user))
 
 
 # ── POST /refresh ─────────────────────────────────────────────────────────────
 
-@router.post(
-    "/refresh",
-    response_model=RefreshResponse,
-    summary="Rotate refresh token and get a new access token",
-)
-def refresh(payload: RefreshRequest, db: Session = Depends(get_db)):
+@router.post("/refresh", response_model=RefreshResponse)
+async def refresh(payload: RefreshRequest, db: AsyncSession = Depends(get_db)):
     try:
-        tokens = svc.refresh_token_pair(db, payload.refresh_token)
+        tokens = await svc.refresh_token_pair(db, payload.refresh_token)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(exc),
         )
+
     return RefreshResponse(**tokens)
 
 
 # ── POST /logout ──────────────────────────────────────────────────────────────
 
-@router.post(
-    "/logout",
-    response_model=MessageResponse,
-    summary="Revoke the current access token (and optionally the refresh token)",
-)
-def logout(
+@router.post("/logout", response_model=MessageResponse)
+async def logout(
     payload: LogoutRequest,
     current: dict = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    from uuid import UUID
-
-    svc.logout_user(
+    await svc.logout_user(
         db,
         access_jti=current["jti"],
         access_exp=current["exp"],
@@ -115,37 +114,38 @@ def logout(
         logout_all=payload.logout_all,
         user_id=UUID(current["user_id"]) if payload.logout_all else None,
     )
+
     return MessageResponse(message="Logged out successfully.")
 
 
 # ── GET /me ───────────────────────────────────────────────────────────────────
 
-@router.get(
-    "/me",
-    response_model=UserOut,
-    summary="Return the authenticated user's profile",
-)
-def me(
+@router.get("/me", response_model=UserOut)
+async def me(
     current: dict = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    from uuid import UUID
+    user = await svc.get_user_by_id(db, UUID(current["user_id"]))
 
-    user = svc.get_user_by_id(db, UUID(current["user_id"]))
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found.",
+        )
+
     return UserOut.model_validate(user)
 
 
 # ── GET /google ───────────────────────────────────────────────────────────────
 
-@router.get("/google", summary="Start Google OAuth flow")
-def google_login():
+@router.get("/google")
+async def google_login():
     if not settings.google_client_id:
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail="Google OAuth is not configured on this server.",
         )
+
     params = urlencode(
         {
             "client_id": settings.google_client_id,
@@ -156,18 +156,21 @@ def google_login():
             "prompt": "select_account",
         }
     )
+
     return RedirectResponse(url=f"{settings.google_auth_url}?{params}")
 
 
 # ── GET /google/callback ──────────────────────────────────────────────────────
 
-@router.get("/google/callback", summary="Google OAuth callback")
-async def google_callback(code: str, db: Session = Depends(get_db)):
+@router.get("/google/callback")
+async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
+
     if not code:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Missing authorisation code.",
         )
+
     try:
         google_info = await svc.google_exchange_code(code)
     except Exception as exc:
@@ -178,7 +181,7 @@ async def google_callback(code: str, db: Session = Depends(get_db)):
         )
 
     try:
-        user = svc.upsert_google_user(db, google_info)
+        user = await svc.upsert_google_user(db, google_info)
     except Exception:
         logger.exception("DB error upserting Google user")
         raise HTTPException(
@@ -186,7 +189,8 @@ async def google_callback(code: str, db: Session = Depends(get_db)):
             detail="Failed to save Google user.",
         )
 
-    tokens = svc.issue_token_pair(db, user)
+    tokens = await svc.issue_token_pair(db, user)
+
     user_b64 = base64.b64encode(
         json.dumps(jsonable_encoder(UserOut.model_validate(user))).encode()
     ).decode()
@@ -197,4 +201,5 @@ async def google_callback(code: str, db: Session = Depends(get_db)):
         f"&refresh_token={tokens['refresh_token']}"
         f"&user={user_b64}"
     )
+
     return RedirectResponse(url=redirect_url)

@@ -9,12 +9,6 @@ DATABASE_URL = settings.POSTGRES_DSN
 if not DATABASE_URL:
     raise RuntimeError("POSTGRES_DSN is not set")
 
-if DATABASE_URL.startswith("postgresql://"):
-    DATABASE_URL = DATABASE_URL.replace(
-        "postgresql://",
-        "postgresql+asyncpg://",
-        1
-    )
 
 Base = declarative_base()
 

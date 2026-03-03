@@ -9,7 +9,7 @@ from src.data.clients.db_client import get_db
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
-def get_current_user(
+async def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> dict:
@@ -21,7 +21,8 @@ def get_current_user(
 
     Returns the decoded payload dict on success.
     """
-    payload = verify_access_token(token)
+    payload = await verify_access_token(token)
+
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -30,7 +31,9 @@ def get_current_user(
         )
 
     jti = payload.get("jti")
-    if jti and is_token_revoked(db, jti):
+
+    # IMPORTANT: only await this if you converted it to async
+    if jti and await is_token_revoked(db, jti):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has been revoked. Please log in again.",

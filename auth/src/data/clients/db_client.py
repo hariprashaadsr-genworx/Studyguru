@@ -1,40 +1,39 @@
-from typing import Generator
-
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker, Session
-
+from typing import AsyncGenerator
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.orm import declarative_base
 from src.config.settings import settings
 
 DATABASE_URL = settings.database_url
 
-# SQLite needs check_same_thread=False; ignored by other dialects
-connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
-
-engine = create_engine(
+engine = create_async_engine(
     DATABASE_URL,
     pool_size=5,
     max_overflow=10,
     pool_pre_ping=True,
-    connect_args=connect_args,
 )
 
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+SessionLocal = async_sessionmaker(
+    bind=engine,
+    expire_on_commit=False,
+    autoflush=False,
+)
 
 Base = declarative_base()
 
 
-def get_db() -> Generator[Session, None, None]:
-    """FastAPI dependency – yields a DB session and closes it afterwards."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# ── FastAPI Dependency ────────────────────────────────────────────────────────
+
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """FastAPI dependency – yields an async DB session."""
+    async with SessionLocal() as session:
+        yield session
 
 
-def init_db() -> None:
+# ── DB Initialisation ─────────────────────────────────────────────────────────
+
+async def init_db() -> None:
     """Create all tables that are not yet present in the database."""
-    # Import models here so SQLAlchemy registers them before create_all
     import src.data.models.auth_models  # noqa: F401
 
-    Base.metadata.create_all(bind=engine)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)

@@ -1,9 +1,7 @@
 import logging
 from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from src.api.rest.auth_routers import router as auth_router
 from src.config.settings import settings
 from src.data.clients.db_client import init_db
@@ -18,7 +16,7 @@ logger = logging.getLogger("studyguru.auth")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # ── Startup ────────────────────────────────────────────────────────────
-    init_db()
+    await init_db()
     logger.info("✓ StudyGuru Auth DB initialised (tables: users, sessions, revoked_tokens)")
     logger.info("✓ Frontend origin  →  %s", settings.frontend_origin)
     logger.info(
