@@ -15,7 +15,7 @@ services:
 
   auth:
     build:
-      context: ./studyguru-auth
+      context: ./auth
     container_name: studyguru_auth
     restart: always
     depends_on:
@@ -25,7 +25,7 @@ services:
     ports:
       - "8001:8001"
     volumes:
-      - ./studyguru-auth:/app
+      - ./auth:/app
 
   backend:
     build:
