@@ -96,7 +96,7 @@ COURSE STRUCTURE:
     "submodules": [{"id": s["submodule_id"], "title": s["title"]} for s in m["submodules"]]
 } for m in modules], indent=2)}
 
-Return ONLY valid JSON (no markdown fences, no extra text):
+Return ONLY valid JSON (no markdown fences, no extra text), MAKE SURE TO PUT DOUBLE QUOTES FOR ALL THE KEYS:
 {{
   "subject_domain": "precise domain e.g. 'Class 8 Science', 'Machine Learning', 'Organic Chemistry'",
   "modules": [
@@ -116,7 +116,7 @@ Return ONLY valid JSON (no markdown fences, no extra text):
             "Introduction: [specific concept name]",
             "[Mechanism/Process title specific to topic]",
             "[Step-by-step or How-it-works title]",
-            "Worked Example: [specific example name relevant to topic]",
+            "Worked Example: [specific example name relevant to topic] if related to math/chemistry/physics, or [Case Study: specific real-world example] for other subjects ",
             "Check Your Understanding"
           ]
         }}

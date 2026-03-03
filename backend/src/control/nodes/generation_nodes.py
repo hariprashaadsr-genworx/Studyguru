@@ -43,7 +43,7 @@ from src.schemas.generation import CourseState
 from src.utils.generation_engine import _mod, _sub, _prof, _strip_json, _parse_slides
 import asyncio
 from langchain_core.runnables import RunnableConfig
-from src.data.repositories.crud import ensure_course_row, store_course, store_submodule
+from src.data.repositories.crud import ensure_course_row, store_course, store_submodule, store_modules, store_videos, store_references
 from src.constants.base import AUTHORITY, JUNK, GOOD_DOMAINS
 from langchain_core.output_parsers import PydanticOutputParser
 from src.schemas.generation import CourseStructure
@@ -83,6 +83,8 @@ Requirements:
 • Use clear module_id and submodule_id pattern: M1, M2, … and M1.1, M1.2, M2.1, etc.
 • Do NOT include duration, assessments, learning objectives, or resources unless they already appear in the input syllabus
 • Output ONLY valid JSON — no explanations, no markdown, no preamble, no trailing commas
+
+** OUTPUT MUST HAVE course_title, course_description, and a modules list with module_id, title, description, and submodules (with submodule_id, title, description).
 
 Output schema you must follow exactly:
 
@@ -204,6 +206,9 @@ async def preprocessor(state: CourseState, config: RunnableConfig) -> CourseStat
         prof["label"]
     )
 
+    # Store module rows so submodule FKs can reference them
+    await store_modules(db, state["course_id"], normalised)
+
     return state
 
 
@@ -231,11 +236,9 @@ async def planning_agent(state: CourseState, config: RunnableConfig) -> CourseSt
     )
 
     raw = await _llm(
-        system="Return ONLY valid JSON. No markdown fences.",
+        system="Return ONLY valid JSON. No markdown fences. BE EXTRA CAREFUL IN HANDLING BACKSPACE CHARACTERS AND OTHER CHARACTERS THAT MAY CAUSE JSON PARSING ISSUES. DOUBLE QUOTES ON ALL KEYS AND CAREFUL WITH ESCAPE CHARACTERS",
         user=prompt,
     )
-    print("RAW OUTPUT:")
-    print(raw)
 
     clean = repair_json(raw)
     data = json.loads(clean)
@@ -935,6 +938,10 @@ async def attach_module_refs(state: CourseState, config: RunnableConfig) -> Cour
 
     state["modules"][state["cur_mod_idx"]]["references"] = final
 
+    # Persist references to DB
+    db = config["configurable"]["db"]
+    await store_references(db, state["course_id"], mod["module_id"], final)
+
     await _log(state, f"  → {len(final)} refs")
 
     await LOG.step(
@@ -987,6 +994,10 @@ async def fetch_module_videos(state: CourseState, config: RunnableConfig) -> Cou
         await _log(state, f"YouTube search error: {e}")
 
     state["modules"][state["cur_mod_idx"]]["youtube_videos"] = videos
+
+    # Persist videos to DB
+    db = config["configurable"]["db"]
+    await store_videos(db, state["course_id"], mod["module_id"], videos)
 
     await _log(state, f"→ {len(videos)} video(s) found")
     await LOG.step(state["job_id"], 14, f"Videos for '{mod['title']}'", f"{len(videos)} found")

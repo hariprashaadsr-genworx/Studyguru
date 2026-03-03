@@ -82,7 +82,7 @@ async def _worker(job_id: str, course_input: dict):
         jobs[job_id]["status"] = "error"
         jobs[job_id]["error"] = str(e)
         jobs[job_id]["progress_log"].append(f"Fatal: {e}")
-        LOG.error(job_id, str(e))
+        await LOG.error(job_id, str(e))
 
     finally:
         generation_nodes._log = orig_log

@@ -1,9 +1,9 @@
 from typing import Optional, List
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 from src.data.models.postgres.course import Course
-from src.data.models.postgres.submodules import Submodule
+from src.data.models.postgres.submodules import Module, Submodule, Slide, Video, Reference
 
 
 async def ensure_course_row(
@@ -32,6 +32,33 @@ async def ensure_course_row(
             )
             await db.commit()
 
+    except SQLAlchemyError as e:
+        await db.rollback()
+        raise e
+
+
+async def store_modules(
+    db: AsyncSession,
+    course_id: str,
+    modules: list,
+) -> None:
+    """Store module rows for a course (upsert by composite key)."""
+    try:
+        for m in modules:
+            row_id = f"{course_id}::{m['module_id']}"
+            result = await db.execute(
+                select(Module).where(Module.module_id == row_id)
+            )
+            mod = result.scalar_one_or_none()
+            if not mod:
+                db.add(Module(
+                    module_id=row_id,
+                    course_id=course_id,
+                    title=m["title"],
+                ))
+            else:
+                mod.title = m["title"]
+        await db.commit()
     except SQLAlchemyError as e:
         await db.rollback()
         raise e
@@ -121,29 +148,82 @@ async def store_submodule(
     data: dict,
 ) -> None:
     row_id = f"{course_id}::{module_id}::{submodule_id}"
+    mod_row_id = f"{course_id}::{module_id}"
 
     try:
         result = await db.execute(
-            select(Submodule).where(Submodule.id == row_id)
+            select(Submodule).where(Submodule.submodule_id == row_id)
         )
         sub = result.scalar_one_or_none()
 
         if not sub:
-            sub = Submodule(id=row_id, course_id=course_id)
+            sub = Submodule(
+                submodule_id=row_id,
+                module_id=mod_row_id,
+                course_id=course_id,
+            )
             db.add(sub)
 
-        sub.module_id = module_id
-        sub.submodule_id = submodule_id
         sub.title = data.get("title", "")
         sub.skill_level = data.get("skill_level", 3)
         sub.content = data.get("content", "")
-        sub.slides = data.get("slides", [])
-        sub.images = data.get("images", [])
-        sub.keywords = data.get("keywords", [])
-        sub.refs_count = data.get("refs_count", 0)
+
+        # Store slides in the slides table
+        await db.execute(
+            delete(Slide).where(Slide.submodule_id == row_id)
+        )
+        for slide_data in data.get("slides", []):
+            db.add(Slide(
+                submodule_id=row_id,
+                slide_content=slide_data,
+            ))
 
         await db.commit()
 
+    except SQLAlchemyError as e:
+        await db.rollback()
+        raise e
+
+
+async def store_videos(
+    db: AsyncSession,
+    course_id: str,
+    module_id: str,
+    videos: list,
+) -> None:
+    """Store YouTube videos for a module."""
+    mod_row_id = f"{course_id}::{module_id}"
+    try:
+        await db.execute(
+            delete(Video).where(Video.module_id == mod_row_id)
+        )
+        for v in videos:
+            url = v.get("url", "")
+            if url:
+                db.add(Video(module_id=mod_row_id, youtube_url=url))
+        await db.commit()
+    except SQLAlchemyError as e:
+        await db.rollback()
+        raise e
+
+
+async def store_references(
+    db: AsyncSession,
+    course_id: str,
+    module_id: str,
+    references: list,
+) -> None:
+    """Store references for a module."""
+    mod_row_id = f"{course_id}::{module_id}"
+    try:
+        await db.execute(
+            delete(Reference).where(Reference.module_id == mod_row_id)
+        )
+        for ref in references:
+            link = ref.get("url", "")
+            if link:
+                db.add(Reference(module_id=mod_row_id, ref_link=link))
+        await db.commit()
     except SQLAlchemyError as e:
         await db.rollback()
         raise e
