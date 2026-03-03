@@ -1,14 +1,11 @@
 from pathlib import Path
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
 from contextlib import asynccontextmanager
 from src.api.rest.routes.base_generation_router import router
 from fastapi import FastAPI
 from src.data.clients.postgresql_client import init_db
 
-
-load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

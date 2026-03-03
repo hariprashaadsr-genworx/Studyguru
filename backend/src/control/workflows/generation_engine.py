@@ -42,7 +42,6 @@ def _build():
     g.add_conditional_edges("advance_sub", _route_sub,
         {"more": "tavily_search", "done": "attach_refs"})
 
-    # After refs: fetch videos → advance module
     g.add_edge("attach_refs", "fetch_videos")
     g.add_edge("fetch_videos","advance_mod")
 
@@ -57,11 +56,8 @@ workflow = _build()
 
 
 
-async def run_workflow(
-    course_input: dict,
-    job_id: str,
-    db: AsyncSession,
-) -> CourseState:
+async def run_workflow(course_input: dict, job_id: str, 
+    db: AsyncSession) -> CourseState:
 
     modules = course_input["modules"]
     total_mods = len(modules)

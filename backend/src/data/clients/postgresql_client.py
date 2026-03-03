@@ -1,11 +1,10 @@
-import os
 from typing import AsyncGenerator
 from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import declarative_base
+from src.config.settings import settings
 
-load_dotenv()
-DATABASE_URL = os.getenv("POSTGRES_DSN", "")
+DATABASE_URL = settings.POSTGRES_DSN
 
 if not DATABASE_URL:
     raise RuntimeError("POSTGRES_DSN is not set")

@@ -1,5 +1,5 @@
 from typing import List, Optional, TypedDict
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 class CourseState(TypedDict):
     job_id:        str
@@ -27,3 +27,21 @@ class CourseState(TypedDict):
 
 class GenerateRequest(BaseModel):
     course_input: dict
+
+class SyllabusRequest(BaseModel):
+    syllabus: str
+
+class SubModule(BaseModel):
+    submodule_id: str = Field(..., description="Unique submodule ID like M1.1")
+    title: str
+
+
+class Module(BaseModel):
+    module_id: str = Field(..., description="Unique module ID like M1")
+    title: str
+    submodules: List[SubModule]
+
+
+class CourseStructure(BaseModel):
+    course_title: str
+    modules: List[Module]

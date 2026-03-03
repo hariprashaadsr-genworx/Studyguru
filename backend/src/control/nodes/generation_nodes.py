@@ -27,6 +27,8 @@ import re
 import json
 import uuid
 from typing import TypedDict, List, Optional
+from json_repair import repair_json
+
 
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
@@ -34,7 +36,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from tavily import TavilyClient
 from langgraph.graph import StateGraph, END
 
-from src.control.agents.generation_engine import _tavily, _llm
+from src.control.agents.agent import _tavily, _llm
 import src.observability.logging as LOG
 import src.control.prompts as P
 from src.schemas.generation import CourseState
@@ -43,7 +45,9 @@ import asyncio
 from langchain_core.runnables import RunnableConfig
 from src.data.repositories.crud import ensure_course_row, store_course, store_submodule
 from src.constants.base import AUTHORITY, JUNK, GOOD_DOMAINS
-load_dotenv()
+from langchain_core.output_parsers import PydanticOutputParser
+from src.schemas.generation import CourseStructure
+from src.config.settings import settings
 
 # ── LLM + Tavily ──────────────────────────────────────────────────────────────
 
@@ -52,6 +56,67 @@ tavily = _tavily()
 async def _log(state: CourseState, msg: str) -> None:
     state["progress_log"].append(msg)
     print(f"[WF] {msg}")
+
+
+parser = PydanticOutputParser(pydantic_object=CourseStructure)
+
+
+async def generate_course_structure(syllabus: str) -> dict:
+    """
+    Generate structured course JSON from syllabus string.
+    """
+
+    prompt = f"""
+You are an experienced instructional designer and curriculum architect who specializes in creating clear, logical, progressive university-level and professional courses.
+
+Task:
+Convert the provided raw syllabus (or topic list) into a well-structured, modular online/in-person course in JSON format.
+
+Requirements:
+• Create 4–8 modules (choose based on content natural size — aim for good balance)
+• Each module must represent a coherent major theme or progression stage
+• Modules should follow pedagogical progression: foundational → core concepts → advanced/application → synthesis/integration
+• Every module must contain 3–7 submodules (lessons/topics)
+• Use academic, concise, professional titles (avoid casual phrasing)
+• Learning should feel incremental and cumulative
+• Include brief but meaningful descriptions (1–2 sentences) for each module and submodule
+• Use clear module_id and submodule_id pattern: M1, M2, … and M1.1, M1.2, M2.1, etc.
+• Do NOT include duration, assessments, learning objectives, or resources unless they already appear in the input syllabus
+• Output ONLY valid JSON — no explanations, no markdown, no preamble, no trailing commas
+
+Output schema you must follow exactly:
+
+```json
+{{
+  "course_title": "Concise Academic Course Title",
+  "course_description": "One-paragraph high-level overview of the whole course",
+  "modules": [
+    {{
+      "module_id": "M1",
+      "title": "Module Title",
+      "description": "1–2 sentence description of the module purpose and scope",
+      "submodules": [
+        {{
+          "submodule_id": "M1.1",
+          "title": "Clear, concise lesson/topic title",
+          "description": "1–2 sentence explanation what this session covers"
+        }},
+        {{
+          "submodule_id": "M1.2",
+          ...
+        }}
+      ]
+    }},
+    ...
+  ]
+}}
+"""
+
+    response = await _llm(system=prompt, user=syllabus)
+
+    parsed = parser.parse(response)
+
+    return parsed.dict()
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -171,6 +236,9 @@ async def planning_agent(state: CourseState, config: RunnableConfig) -> CourseSt
     )
     print("RAW OUTPUT:")
     print(raw)
+
+    clean = repair_json(raw)
+    data = json.loads(clean)
 
     data = json.loads(await _strip_json(raw))
 

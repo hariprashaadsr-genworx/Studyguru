@@ -1,15 +1,15 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from dotenv import load_dotenv
+from openai import BaseModel
 from src.schemas.generation import GenerateRequest
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.data.clients.postgresql_client import get_db
 from fastapi import Depends
 import src.core.services.generation_service as services
+from src.schemas.generation import SyllabusRequest
 
-load_dotenv()
 
 router = APIRouter(prefix='/api', tags = ['Base course generation Engine'])
-
 
 @router.get("/courses")
 async def list_courses_api(db: AsyncSession = Depends(get_db)):
@@ -41,6 +41,14 @@ async def get_log(job_id: str):
     return await services.get_logs(job_id)
 
 
+@router.post("/get_syllabus")
+async def get_syllabus(payload: SyllabusRequest):
+    try:
+        result = await services.generate_course_structure(payload.syllabus)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
 @router.get("/health")
 async def health():
     return await services.health()

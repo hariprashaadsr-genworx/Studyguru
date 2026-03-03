@@ -19,6 +19,7 @@ from src.data.clients.postgresql_client import SessionLocal, get_db, engine
 from fastapi import Depends
 from src.data.repositories.crud import list_courses, get_course
 import src.control.prompts as P
+from src.control.nodes.generation_nodes import generate_course_structure
 
 load_dotenv()
 
@@ -147,6 +148,10 @@ async def stream_status_service(job_id: str):
             await asyncio.sleep(0.4)
 
     return EventSourceResponse(generator())
+
+
+async def get_syllabus(syllabus: str):
+    return await generate_course_structure(syllabus)
 
 
 async def get_results(job_id: str):
