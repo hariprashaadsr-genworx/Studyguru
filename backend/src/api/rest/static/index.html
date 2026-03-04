@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CourseEngine — AI Learning Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+/* ── RESET & TOKENS ──────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f7f7f7;--surface:#ffffff;--border:#e5e5e5;
+  --text:#1c1c1e;--muted:#6b6b6b;--accent:#a435f0;--accent2:#7c3aed;
+  --success:#22c55e;--warn:#f59e0b;--error:#ef4444;
+  --sidebar-bg:#1c1d1f;--sidebar-text:#cec0fc;--sidebar-hover:#3e4143;
+  --sidebar-active:#a435f0;
+  --font:'DM Sans',system-ui,sans-serif;--mono:'DM Mono',monospace;
+  --radius:8px;--shadow:0 2px 8px rgba(0,0,0,.10);
+}
+html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--text);font-size:15px;line-height:1.6}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;border-radius:var(--radius)}
+button{font-family:var(--font);cursor:pointer;border:none;outline:none}
+
+/* ── VIEWS ───────────────────────────────────────────────────────────────── */
+.view{display:none}
+.view.active{display:block}
+#view-course.active{display:flex;height:100vh;overflow:hidden}
+
+/* ══════════════════════════════════════════════════════════
+   DASHBOARD
+════════════════════════════════════════════════════════════ */
+#dash-nav{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.nav-logo{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:700}
+.nav-logo span{color:var(--accent)}
+.logo-icon{width:32px;height:32px;background:var(--accent);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:var(--radius);
+  font-size:14px;font-weight:600;transition:.15s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent2)}
+.btn-ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+.btn-ghost:hover{background:#f3e8ff}
+.btn-sm{padding:6px 12px;font-size:13px}
+.btn-icon{padding:8px;font-size:16px;background:transparent;color:var(--muted);border-radius:6px}
+.btn-icon:hover{background:var(--border);color:var(--text)}
+
+#dash-hero{padding:48px 32px 32px;max-width:1200px;margin:0 auto}
+#dash-hero h1{font-size:30px;font-weight:700;margin-bottom:6px}
+#dash-hero p{color:var(--muted);font-size:15px}
+
+#dash-stats{display:flex;gap:20px;padding:0 32px 24px;max-width:1200px;margin:0 auto}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px 24px;flex:1;min-width:0}
+.stat-card .num{font-size:28px;font-weight:700;color:var(--accent)}
+.stat-card .lbl{font-size:13px;color:var(--muted);margin-top:2px}
+
+#dash-toolbar{display:flex;align-items:center;justify-content:space-between;
+  padding:0 32px 16px;max-width:1200px;margin:0 auto}
+#dash-toolbar h2{font-size:18px;font-weight:700}
+
+#course-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  gap:20px;padding:0 32px 48px;max-width:1200px;margin:0 auto}
+
+.course-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  overflow:hidden;transition:.2s;cursor:pointer}
+.course-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.card-color{height:6px}
+.card-body{padding:20px}
+.card-domain{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--accent);margin-bottom:8px}
+.card-title{font-size:16px;font-weight:700;margin-bottom:10px;line-height:1.3;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-level{display:inline-flex;align-items:center;gap:5px;font-size:12px;
+  padding:3px 10px;border-radius:20px;font-weight:600;margin-bottom:12px}
+.level-1{background:#dcfce7;color:#166534}
+.level-2{background:#d1fae5;color:#065f46}
+.level-3{background:#dbeafe;color:#1e40af}
+.level-4{background:#fef3c7;color:#92400e}
+.level-5{background:#fce7f3;color:#9d174d}
+.card-stats{display:flex;gap:16px;font-size:12px;color:var(--muted);margin-bottom:14px}
+.card-stats span{display:flex;align-items:center;gap:4px}
+.card-footer{display:flex;align-items:center;justify-content:space-between;
+  padding-top:12px;border-top:1px solid var(--border)}
+.card-date{font-size:11px;color:var(--muted)}
+
+.empty-state{grid-column:1/-1;text-align:center;padding:80px 20px}
+.empty-icon{font-size:56px;margin-bottom:16px}
+.empty-state h3{font-size:20px;font-weight:700;margin-bottom:8px}
+.empty-state p{color:var(--muted);margin-bottom:24px}
+
+/* ══════════════════════════════════════════════════════════
+   CREATION FORM / MODAL
+════════════════════════════════════════════════════════════ */
+#modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;
+  display:none;align-items:center;justify-content:center;padding:20px}
+#modal-overlay.open{display:flex}
+#modal{background:var(--surface);border-radius:16px;width:100%;max-width:680px;
+  max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.25)}
+.modal-header{padding:24px 28px 0;display:flex;align-items:center;justify-content:space-between}
+.modal-header h2{font-size:20px;font-weight:700}
+.modal-close{background:transparent;border:none;font-size:22px;cursor:pointer;color:var(--muted);
+  width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center}
+.modal-close:hover{background:var(--border)}
+.modal-body{padding:24px 28px}
+.modal-footer{padding:16px 28px 24px;display:flex;gap:10px;justify-content:flex-end;
+  border-top:1px solid var(--border);margin-top:8px}
+
+.form-group{margin-bottom:18px}
+.form-group label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+.form-group input,.form-group select,.form-group textarea{
+  width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);
+  font-family:var(--font);font-size:14px;color:var(--text);background:var(--surface);
+  transition:.15s;outline:none}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{
+  border-color:var(--accent);box-shadow:0 0 0 3px rgba(164,53,240,.12)}
+.form-group textarea{resize:vertical;min-height:70px}
+
+.module-block{background:#fafafa;border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px;margin-bottom:12px}
+.module-block-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.module-block-header input{flex:1;padding:7px 10px;border:1px solid var(--border);
+  border-radius:6px;font-family:var(--font);font-size:14px}
+.module-block-header input:focus{border-color:var(--accent);outline:none}
+.submod-list{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.submod-row{display:flex;align-items:center;gap:6px}
+.submod-row input{flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;
+  font-family:var(--font);font-size:13px}
+.submod-row input:focus{border-color:var(--accent);outline:none}
+.btn-del{background:transparent;border:none;color:#ef4444;cursor:pointer;font-size:16px;
+  padding:4px;border-radius:4px;line-height:1}
+.btn-del:hover{background:#fef2f2}
+.btn-add-sub{font-size:12px;color:var(--accent);font-weight:600;padding:4px 8px;
+  background:transparent;border:none;cursor:pointer}
+.btn-add-sub:hover{text-decoration:underline}
+.btn-add-module{width:100%;padding:10px;border:2px dashed var(--border);border-radius:var(--radius);
+  background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;margin-bottom:4px}
+.btn-add-module:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ══════════════════════════════════════════════════════════
+   GENERATION PROGRESS
+════════════════════════════════════════════════════════════ */
+#view-generating{padding:60px 32px;max-width:680px;margin:0 auto}
+.gen-header{margin-bottom:32px}
+.gen-header h2{font-size:24px;font-weight:700;margin-bottom:6px}
+.gen-header p{color:var(--muted)}
+.gen-progress-bar{height:6px;background:var(--border);border-radius:3px;margin:20px 0;overflow:hidden}
+.gen-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));
+  border-radius:3px;width:0%;transition:width .4s}
+.gen-log{background:var(--sidebar-bg);border-radius:var(--radius);padding:16px;
+  max-height:400px;overflow-y:auto;font-family:var(--mono);font-size:12px;
+  line-height:1.7;color:#ccc}
+.gen-log .log-line{animation:fadeIn .3s ease}
+.gen-log .log-success{color:#86efac}
+.gen-log .log-error{color:#fca5a5}
+.gen-log .log-step{color:#c4b5fd}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.gen-spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(164,53,240,.3);
+  border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ══════════════════════════════════════════════════════════
+   COURSE VIEWER (UDEMY-STYLE)
+════════════════════════════════════════════════════════════ */
+/* Top bar */
+#viewer-topbar{
+  position:fixed;top:0;left:0;right:0;z-index:50;
+  background:var(--sidebar-bg);color:#fff;height:56px;
+  display:flex;align-items:center;padding:0 16px;gap:16px;
+}
+#viewer-topbar .back-btn{color:#bbb;font-size:13px;display:flex;align-items:center;gap:5px;
+  cursor:pointer;padding:4px 8px;border-radius:4px}
+#viewer-topbar .back-btn:hover{background:rgba(255,255,255,.1)}
+#viewer-topbar .course-title-bar{flex:1;font-weight:600;font-size:15px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#topbar-progress{display:flex;align-items:center;gap:10px;font-size:13px;color:#bbb}
+#topbar-progress .prog-bar{width:140px;height:5px;background:rgba(255,255,255,.2);border-radius:3px}
+#topbar-progress .prog-fill{height:100%;background:var(--accent);border-radius:3px;transition:.3s}
+
+/* Sidebar */
+#course-sidebar{
+  position:fixed;top:56px;left:0;bottom:0;width:320px;
+  background:var(--sidebar-bg);color:#fff;overflow-y:auto;
+  border-right:1px solid rgba(255,255,255,.08);
+  flex-shrink:0;z-index:40;
+}
+.sidebar-head{padding:16px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sidebar-head h3{font-size:13px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.05em}
+.sidebar-course-name{font-size:15px;font-weight:700;margin-top:6px;color:#fff}
+
+.mod-item{border-bottom:1px solid rgba(255,255,255,.06)}
+.mod-header{display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;cursor:pointer;user-select:none}
+.mod-header:hover{background:rgba(255,255,255,.04)}
+.mod-header .mod-title-txt{font-size:13px;font-weight:600;color:#e5e5e5;flex:1}
+.mod-header .mod-arrow{color:#999;font-size:12px;transition:.2s}
+.mod-header.open .mod-arrow{transform:rotate(90deg)}
+.mod-header .mod-badge{font-size:11px;color:#999;margin-left:8px}
+.mod-subs{display:none}
+.mod-subs.open{display:block}
+
+.sub-item{display:flex;align-items:center;gap:8px;padding:8px 16px 8px 28px;
+  cursor:pointer;transition:.1s;font-size:13px;color:#bbb}
+.sub-item:hover{background:rgba(255,255,255,.06)}
+.sub-item.active{background:rgba(164,53,240,.2);color:#d8b4fe;font-weight:600}
+.sub-item .sub-icon{font-size:10px;color:#999}
+.sub-item .check{width:14px;height:14px;border:1.5px solid #555;border-radius:50%;
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px}
+.sub-item.done .check{background:var(--success);border-color:var(--success);color:#fff}
+
+/* Special items in sidebar */
+.refs-item,.video-item{
+  display:flex;align-items:center;gap:8px;padding:6px 16px 6px 28px;
+  cursor:pointer;font-size:12px;color:#8b8b8b;
+}
+.refs-item:hover,.video-item:hover{background:rgba(255,255,255,.05);color:#bbb}
+.refs-item.active,.video-item.active{color:#f9a8d4}
+
+/* Content area */
+#course-content{
+  margin-left:320px;margin-top:56px;flex:1;overflow-y:auto;
+  display:flex;flex-direction:column;min-height:calc(100vh - 56px);
+}
+
+/* ── Module Video Bar ── */
+#video-bar{
+  background:#0f0f0f;padding:12px 32px;
+  display:flex;gap:12px;overflow-x:auto;align-items:center;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  display:none;
+}
+#video-bar.has-videos{display:flex}
+.video-thumb{flex-shrink:0;width:220px;background:#1a1a1a;border-radius:8px;
+  overflow:hidden;cursor:pointer;border:1px solid rgba(255,255,255,.1);transition:.15s}
+.video-thumb:hover{border-color:var(--accent);transform:translateY(-1px)}
+.video-thumb-inner{padding:12px}
+.yt-icon{color:#ff0000;font-size:18px;margin-bottom:6px}
+.video-title{font-size:12px;font-weight:600;color:#e5e5e5;line-height:1.3;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.video-snippet{font-size:11px;color:#888;margin-top:4px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.video-bar-label{font-size:11px;font-weight:700;color:#666;text-transform:uppercase;
+  letter-spacing:.05em;flex-shrink:0;writing-mode:horizontal-tb;padding:0 4px}
+
+/* ── Slide Content ── */
+#slide-area{flex:1;padding:40px 48px;max-width:900px}
+.slide-meta{display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.slide-breadcrumb{font-size:12px;color:var(--muted)}
+.slide-breadcrumb span{color:var(--accent);font-weight:600}
+.slide-nav-bar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.slide-dots{display:flex;gap:6px;flex:1}
+.dot{width:24px;height:4px;border-radius:2px;background:var(--border);cursor:pointer;transition:.2s}
+.dot.active{background:var(--accent)}
+.dot.done{background:#a855f7}
+
+#slide-content-box{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:36px 40px;min-height:420px;box-shadow:var(--shadow);
+}
+#slide-content-box h2{font-size:22px;font-weight:700;margin-bottom:20px;color:var(--text)}
+#slide-content-box h3{font-size:18px;font-weight:700;margin:20px 0 10px}
+#slide-content-box p{margin-bottom:14px;line-height:1.75}
+#slide-content-box ul,#slide-content-box ol{margin:0 0 14px 22px}
+#slide-content-box li{margin-bottom:6px;line-height:1.65}
+#slide-content-box strong{color:var(--accent2)}
+#slide-content-box code{font-family:var(--mono);font-size:13px;background:#f3f4f6;
+  padding:2px 6px;border-radius:4px;color:#c026d3}
+#slide-content-box pre{background:#1e1e2e;padding:20px;border-radius:8px;overflow-x:auto;
+  margin:16px 0;border:1px solid rgba(255,255,255,.06)}
+#slide-content-box pre code{background:none;color:#cdd6f4;padding:0}
+#slide-content-box blockquote{border-left:3px solid var(--accent);padding:10px 16px;
+  background:#faf5ff;border-radius:0 8px 8px 0;margin:16px 0;font-style:italic}
+#slide-content-box img{display:block;margin:20px auto;border-radius:8px;max-height:350px;
+  border:1px solid var(--border);box-shadow:var(--shadow)}
+#slide-content-box em{font-style:italic;color:var(--muted);font-size:13px}
+#slide-content-box .katex-display{background:#faf5ff;padding:12px 20px;border-radius:8px;
+  margin:16px 0;overflow-x:auto;border:1px solid #e9d5ff}
+#slide-content-box table{width:100%;border-collapse:collapse;margin:16px 0}
+#slide-content-box th{background:#f3f4f6;padding:8px 12px;text-align:left;
+  border:1px solid var(--border);font-size:13px}
+#slide-content-box td{padding:8px 12px;border:1px solid var(--border);font-size:13px}
+
+/* Slide footer nav */
+.slide-footer{display:flex;align-items:center;justify-content:space-between;
+  padding:20px 0;border-top:1px solid var(--border);margin-top:20px}
+.slide-counter{font-size:13px;color:var(--muted)}
+.nav-btns{display:flex;gap:10px}
+.nav-btn{padding:10px 22px;border-radius:var(--radius);font-size:14px;font-weight:600}
+.nav-btn-prev{background:var(--border);color:var(--text)}
+.nav-btn-prev:hover{background:#ddd}
+.nav-btn-next{background:var(--accent);color:#fff}
+.nav-btn-next:hover{background:var(--accent2)}
+.nav-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── References Panel ── */
+#refs-panel{
+  background:#faf5ff;border-top:1px solid #e9d5ff;padding:32px 48px;
+  display:none;
+}
+#refs-panel.show{display:block}
+.refs-heading{font-size:16px;font-weight:700;margin-bottom:16px;color:var(--accent2)}
+.ref-list{display:flex;flex-direction:column;gap:10px}
+.ref-item{background:var(--surface);border:1px solid #e9d5ff;border-radius:8px;
+  padding:14px 16px;display:flex;align-items:flex-start;gap:12px}
+.ref-num{width:24px;height:24px;background:var(--accent);color:#fff;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:11px;
+  font-weight:700;flex-shrink:0;margin-top:2px}
+.ref-body{flex:1;min-width:0}
+.ref-title{font-size:13px;font-weight:600;margin-bottom:3px}
+.ref-url{font-size:12px;color:var(--accent);text-overflow:ellipsis;overflow:hidden;white-space:nowrap}
+.ref-url:hover{text-decoration:underline}
+.ref-snippet{font-size:12px;color:var(--muted);margin-top:4px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ref-score-bar{height:3px;background:var(--border);border-radius:2px;margin-top:6px}
+.ref-score-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px}
+
+/* ── Loading / Error ── */
+.loader{text-align:center;padding:80px;color:var(--muted)}
+.loader-spin{font-size:32px;display:block;animation:spin .7s linear infinite}
+.error-box{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:20px;
+  color:#dc2626;margin:20px}
+
+/* ── Toast ── */
+#toast{position:fixed;bottom:24px;right:24px;background:#1c1c1e;color:#fff;
+  padding:12px 20px;border-radius:8px;font-size:13px;font-weight:500;
+  opacity:0;transition:.3s;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════ DASHBOARD ═══════════════════════════════ -->
+<div id="view-dashboard" class="view active">
+  <nav id="dash-nav">
+    <div class="nav-logo">
+      <div class="logo-icon">⚡</div>
+      <span>Studyguru<span style="color:var(--accent)">AI</span></span>
+    </div>
+    <button class="btn btn-primary" onclick="openModal()">+ Create Course</button>
+  </nav>
+
+  <div id="dash-hero">
+    <h1>Learning Dashboard</h1>
+    <p>AI-generated courses/p>
+  </div>
+
+  <div id="dash-stats">
+    <div class="stat-card"><div class="num" id="stat-courses">—</div><div class="lbl">Total Courses</div></div>
+    <div class="stat-card"><div class="num" id="stat-modules">—</div><div class="lbl">Total Modules</div></div>
+    <div class="stat-card"><div class="num" id="stat-slides">—</div><div class="lbl">Total Slides</div></div>
+    <div class="stat-card"><div class="num" id="stat-videos">—</div><div class="lbl">YouTube Videos</div></div>
+  </div>
+
+  <div id="dash-toolbar">
+    <h2>All Courses</h2>
+    <button class="btn btn-ghost btn-sm" onclick="loadDashboard()">↻ Refresh</button>
+  </div>
+
+  <div id="course-grid">
+    <div class="loader"><span class="loader-spin">⚙</span><p style="margin-top:12px">Loading courses…</p></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ CREATION MODAL ════════════════════════════ -->
+<div id="modal-overlay">
+  <div id="modal">
+    <div class="modal-header">
+      <h2>Create New Syllabus</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Course Title *</label>
+        <input id="f-title" type="text" placeholder="e.g. Photosynthesis for Class 8, Machine Learning Fundamentals">
+      </div>
+      <div class="form-group" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label>Skill Level</label>
+          <select id="f-level">
+            <option value="1">1 — Beginner</option>
+            <option value="2">2 — Elementary</option>
+            <option value="3" selected>3 — Intermediate</option>
+            <option value="4">4 — Advanced</option>
+            <option value="5">5 — Expert</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+        <label style="font-size:13px;font-weight:600;margin:0">Modules &amp; Submodules</label>
+        <span style="font-size:12px;color:var(--muted)">Add at least 1 module</span>
+      </div>
+      <div id="modules-container"></div>
+      <button class="btn-add-module" onclick="addModule()">+ Add Module</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitCourse()">Generate Course</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════ GENERATION PROGRESS ════════════════════════ -->
+<div id="view-generating" class="view">
+  <button class="btn btn-ghost btn-sm" onclick="showDashboard()" style="margin-bottom:24px">← Back to Dashboard</button>
+  <div class="gen-header">
+    <h2 id="gen-title">Generating Course…</h2>
+    <p id="gen-subtitle" style="color:var(--muted)">This may take a few minutes</p>
+  </div>
+  <div class="gen-progress-bar"><div class="gen-progress-fill" id="gen-fill"></div></div>
+  <div class="gen-log" id="gen-log"></div>
+</div>
+
+<!-- ════════════════════════════ COURSE VIEWER ══════════════════════════════ -->
+<div id="view-course" class="view">
+
+  <!-- Top bar -->
+  <div id="viewer-topbar">
+    <div class="back-btn" onclick="showDashboard()">← Dashboard</div>
+    <div class="course-title-bar" id="viewer-course-title">Course</div>
+    <div id="topbar-progress">
+      <span id="prog-text">0%</span>
+      <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+    </div>
+    <a id="log-link" href="#" target="_blank" class="btn-icon" title="Download log">📄</a>
+  </div>
+
+  <!-- Sidebar -->
+  <nav id="course-sidebar">
+    <div class="sidebar-head">
+      <div class="sidebar-head h3">Course Content</div>
+      <div class="sidebar-course-name" id="sidebar-course-name"></div>
+    </div>
+    <div id="sidebar-tree"></div>
+  </nav>
+
+  <!-- Main Content -->
+  <div id="course-content">
+    <!-- YouTube video bar (per module) -->
+    <div id="video-bar"></div>
+
+    <!-- Slide area -->
+    <div id="slide-area">
+      <div id="slide-content-box">
+        <div class="loader"><span class="loader-spin">⚙</span></div>
+      </div>
+      <div class="slide-footer">
+        <span class="slide-counter" id="slide-counter"></span>
+        <div class="nav-btns">
+          <button class="nav-btn nav-btn-prev" id="btn-prev" onclick="navigate(-1)">← Prev</button>
+          <button class="nav-btn nav-btn-next" id="btn-next" onclick="navigate(1)">Next →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- References panel (shown at module end) -->
+    <div id="refs-panel"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════
+let currentCourse = null;
+let flatNav = [];       // [{type:'slide', mi, si, slideIdx} | {type:'refs', mi} | {type:'video', mi}]
+let navIdx  = 0;
+let done    = new Set();
+let moduleCount = 0;
+
+// ══════════════════════════════════════════════════════════════
+// ROUTING — hash-based
+// ══════════════════════════════════════════════════════════════
+window.addEventListener('hashchange', route);
+window.addEventListener('load', route);
+
+function route(){
+  const h = location.hash;
+  if (!h || h === '#/') { showDashboard(); return; }
+  if (h.startsWith('#/course/')) {
+    const id = h.slice(9);
+    loadCourse(id);
+  }
+}
+
+function showView(id){
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showDashboard(){
+  location.hash = '/';
+  loadDashboard();
+}
+
+// ══════════════════════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════════════════════
+async function loadDashboard(){
+  showView('view-dashboard');
+  const grid = document.getElementById('course-grid');
+  grid.innerHTML = '<div class="loader"><span class="loader-spin">⚙</span><p style="margin-top:12px">Loading…</p></div>';
+
+  try {
+    const res = await fetch('/api/courses');
+    const courses = await res.json();
+
+    // Stats
+    const totalModules = courses.reduce((a,c) => a + (c.total_modules||0), 0);
+    const totalSlides  = courses.reduce((a,c) => a + (c.total_slides||0), 0);
+    const totalVideos  = courses.reduce((a,c) => a + (c.total_videos||0), 0);
+    document.getElementById('stat-courses').textContent = courses.length;
+    document.getElementById('stat-modules').textContent = totalModules;
+    document.getElementById('stat-slides').textContent  = totalSlides;
+    document.getElementById('stat-videos').textContent  = totalVideos;
+
+    if (!courses.length){
+      grid.innerHTML = `<div class="empty-state">
+        <div class="empty-icon">🎓</div>
+        <h3>No courses yet</h3>
+        <p>Create your first AI-generated course to get started.</p>
+        <button class="btn btn-primary" onclick="openModal()">+ Create Course</button>
+      </div>`;
+      return;
+    }
+
+    const colors = ['#a435f0','#7c3aed','#2563eb','#059669','#dc2626','#d97706'];
+    grid.innerHTML = courses.map((c, i) => {
+      const color = colors[i % colors.length];
+      const date  = c.created_at ? new Date(c.created_at).toLocaleDateString() : '';
+      const levelClass = `level-${c.skill_level||3}`;
+      return `<div class="course-card" onclick="location.hash='/course/${c.course_id}'">
+        <div class="card-color" style="background:${color}"></div>
+        <div class="card-body">
+          <div class="card-domain">${c.subject_domain||'Course'}</div>
+          <div class="card-title">${c.course_title}</div>
+          <div class="card-level ${levelClass}">
+            ${'★'.repeat(c.skill_level||3)} ${c.skill_label||'Intermediate'}
+          </div>
+          <div class="card-stats">
+            <span>📚 ${c.total_modules||0} modules</span>
+            <span>📝 ${c.total_submodules||0} lessons</span>
+            <span>▶ ${c.total_videos||0} videos</span>
+          </div>
+          <div class="card-footer">
+            <span class="card-date">${date}</span>
+            <button class="btn btn-primary btn-sm">View Course →</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e){
+    grid.innerHTML = `<div class="error-box">Failed to load courses: ${e.message}</div>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// CREATION MODAL
+// ══════════════════════════════════════════════════════════════
+let modCount = 0;
+
+function openModal(){
+  document.getElementById('modal-overlay').classList.add('open');
+  if (!document.getElementById('modules-container').children.length){
+    addModule(); addModule(); // start with 2 modules
+  }
+}
+function closeModal(){
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function addModule(){
+  const id = ++modCount;
+  const c  = document.getElementById('modules-container');
+  const div = document.createElement('div');
+  div.className = 'module-block';
+  div.id = `mod-${id}`;
+  div.innerHTML = `
+    <div class="module-block-header">
+      <input type="text" placeholder="Module title (e.g. Photosynthesis Basics)">
+      <button class="btn-del" onclick="this.closest('.module-block').remove()">✕</button>
+    </div>
+    <div class="submod-list" id="subs-${id}">
+      <div class="submod-row">
+        <input type="text" placeholder="Lesson 1 title">
+        <button class="btn-del" onclick="removeRow(this)">✕</button>
+      </div>
+      <div class="submod-row">
+        <input type="text" placeholder="Lesson 2 title">
+        <button class="btn-del" onclick="removeRow(this)">✕</button>
+      </div>
+    </div>
+    <button class="btn-add-sub" onclick="addSubmod(${id})">+ Add Lesson</button>
+  `;
+  c.appendChild(div);
+}
+
+function addSubmod(modId){
+  const list = document.getElementById(`subs-${modId}`);
+  const row  = document.createElement('div');
+  row.className = 'submod-row';
+  const n = list.children.length + 1;
+  row.innerHTML = `
+    <input type="text" placeholder="Lesson ${n} title">
+    <button class="btn-del" onclick="removeRow(this)">✕</button>
+  `;
+  list.appendChild(row);
+}
+
+function removeRow(btn){
+  const row = btn.closest('.submod-row');
+  if (row.parentElement.children.length > 1) row.remove();
+}
+
+async function submitCourse(){
+  const title = document.getElementById('f-title').value.trim();
+  const level = parseInt(document.getElementById('f-level').value);
+  if (!title){ toast('Please enter a course title.'); return; }
+
+  const modBlocks = document.querySelectorAll('.module-block');
+  const modules = [];
+  let mi = 1;
+  for (const block of modBlocks){
+    const modTitle = block.querySelector('input').value.trim();
+    if (!modTitle) continue;
+    const rows = block.querySelectorAll('.submod-row input');
+    const subs = [];
+    let si = 1;
+    for (const r of rows){
+      const t = r.value.trim();
+      if (t) subs.push({submodule_id: `M${mi}.${si++}`, title: t});
+    }
+    if (subs.length) modules.push({module_id:`M${mi++}`, title:modTitle, submodules:subs});
+  }
+  if (!modules.length){ toast('Add at least one module with lessons.'); return; }
+
+  closeModal();
+  startGeneration({course_title: title, skill_level: level, modules});
+}
+
+// ══════════════════════════════════════════════════════════════
+// GENERATION
+// ══════════════════════════════════════════════════════════════
+async function startGeneration(courseInput){
+  showView('view-generating');
+  document.getElementById('gen-title').textContent = `Generating: ${courseInput.course_title}`;
+  document.getElementById('gen-subtitle').textContent =
+    `Level ${courseInput.skill_level} · ${courseInput.modules.length} modules`;
+  document.getElementById('gen-log').innerHTML = '';
+  document.getElementById('gen-fill').style.width = '0%';
+
+  let jobId;
+  try {
+    const res = await fetch('/api/generate', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({course_input: courseInput}),
+    });
+    const data = await res.json();
+    jobId = data.job_id;
+  } catch(e){
+    document.getElementById('gen-log').innerHTML =
+      `<div class="log-error">Failed to start: ${e.message}</div>`;
+    return;
+  }
+
+  // Estimate total steps for progress bar
+  const totalSubs = courseInput.modules.reduce((a,m) => a + m.submodules.length, 0);
+  const totalSteps = totalSubs * 9 + courseInput.modules.length * 3 + 5;
+  let stepsDone = 0;
+
+  const evtSrc = new EventSource(`/api/status/${jobId}`);
+  const logDiv = document.getElementById('gen-log');
+  const fill   = document.getElementById('gen-fill');
+
+  evtSrc.addEventListener('log', e => {
+    const msg = JSON.parse(e.data).message;
+    stepsDone++;
+    fill.style.width = Math.min(95, (stepsDone / totalSteps) * 100) + '%';
+    const cls = msg.includes('✅') ? 'log-success' : msg.includes('❌') ? 'log-error' :
+                msg.startsWith('🧠') || msg.startsWith('✍') || msg.startsWith('📋') ? 'log-step' : '';
+    const line = document.createElement('div');
+    line.className = `log-line ${cls}`;
+    line.textContent = msg;
+    logDiv.appendChild(line);
+    logDiv.scrollTop = logDiv.scrollHeight;
+  });
+
+  evtSrc.addEventListener('complete', e => {
+    evtSrc.close();
+    fill.style.width = '100%';
+    const {course_id} = JSON.parse(e.data);
+    const line = document.createElement('div');
+    line.className = 'log-line log-success';
+    line.textContent = '✅ Course ready! Loading viewer…';
+    logDiv.appendChild(line);
+    setTimeout(() => { location.hash = `/course/${course_id}`; }, 1200);
+  });
+
+  evtSrc.addEventListener('error', e => {
+    evtSrc.close();
+    const err = JSON.parse(e.data).error;
+    const line = document.createElement('div');
+    line.className = 'log-line log-error';
+    line.textContent = `❌ Error: ${err}`;
+    logDiv.appendChild(line);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// COURSE VIEWER
+// ══════════════════════════════════════════════════════════════
+async function loadCourse(courseId){
+  showView('view-course');
+  document.getElementById('slide-content-box').innerHTML =
+    '<div class="loader"><span class="loader-spin">⚙</span><p style="margin-top:12px">Loading course…</p></div>';
+
+  try {
+    const res = await fetch(`/api/course/${courseId}`);
+    if (!res.ok) throw new Error('Course not found');
+    currentCourse = await res.json();
+  } catch(e){
+    document.getElementById('slide-content-box').innerHTML =
+      `<div class="error-box">Error: ${e.message}</div>`;
+    return;
+  }
+
+  document.getElementById('viewer-course-title').textContent = currentCourse.course_title;
+  document.getElementById('sidebar-course-name').textContent = currentCourse.course_title;
+
+  // Set log link (best effort — jobs may not be in memory after reload)
+  document.getElementById('log-link').href = '#'; // no job_id here
+
+  buildFlatNav();
+  buildSidebar();
+  done = new Set();
+  navIdx = 0;
+  showNav(0);
+}
+
+function buildFlatNav(){
+  flatNav = [];
+  const mods = currentCourse.modules || [];
+  for (let mi = 0; mi < mods.length; mi++){
+    const mod = mods[mi];
+    for (let si = 0; si < mod.submodules.length; si++){
+      const sub = mod.submodules[si];
+      const slides = sub.slides || [];
+      for (let sl = 0; sl < slides.length; sl++){
+        flatNav.push({type:'slide', mi, si, sl});
+      }
+    }
+    // Module references
+    if ((mod.references||[]).length){
+      flatNav.push({type:'refs', mi});
+    }
+  }
+}
+
+function buildSidebar(){
+  const tree = document.getElementById('sidebar-tree');
+  const mods = currentCourse.modules || [];
+  tree.innerHTML = mods.map((mod, mi) => {
+    const subs = mod.submodules.map((sub, si) => {
+      const id = `sub-${mi}-${si}`;
+      const vids = (mod.youtube_videos||[]).length;
+      return `<div class="sub-item" id="${id}" onclick="jumpToSub(${mi},${si})">
+        <div class="check" id="chk-${mi}-${si}"></div>
+        <span>${sub.title}</span>
+      </div>`;
+    }).join('');
+    const hasRefs  = (mod.references||[]).length > 0;
+    const refsItem = hasRefs ? `<div class="refs-item" id="refs-item-${mi}" onclick="jumpToRefs(${mi})">📎 Module References</div>` : '';
+    const vidsCount = (mod.youtube_videos||[]).length;
+    const vidLabel = vidsCount ? `<span class="mod-badge">▶ ${vidsCount}</span>` : '';
+    return `<div class="mod-item">
+      <div class="mod-header open" id="mod-hdr-${mi}" onclick="toggleMod(${mi})">
+        <span class="mod-title-txt">${mod.title}</span>
+        ${vidLabel}
+        <span class="mod-arrow">▶</span>
+      </div>
+      <div class="mod-subs open" id="mod-subs-${mi}">${subs}${refsItem}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleMod(mi){
+  const hdr  = document.getElementById(`mod-hdr-${mi}`);
+  const subs = document.getElementById(`mod-subs-${mi}`);
+  hdr.classList.toggle('open');
+  subs.classList.toggle('open');
+}
+
+function jumpToSub(mi, si){
+  // Find first slide of this submodule in flatNav
+  const idx = flatNav.findIndex(n => n.type==='slide' && n.mi===mi && n.si===si);
+  if (idx >= 0) showNav(idx);
+}
+
+function jumpToRefs(mi){
+  const idx = flatNav.findIndex(n => n.type==='refs' && n.mi===mi);
+  if (idx >= 0) showNav(idx);
+}
+
+function navigate(dir){
+  const next = navIdx + dir;
+  if (next < 0 || next >= flatNav.length) return;
+  showNav(next);
+}
+
+function showNav(idx){
+  navIdx = idx;
+  const item = flatNav[idx];
+  if (!item) return;
+
+  const mod = currentCourse.modules[item.mi];
+  updateVideoBar(mod);
+
+  if (item.type === 'slide'){
+    showSlide(item.mi, item.si, item.sl);
+    done.add(`${item.mi}-${item.si}`);
+  } else if (item.type === 'refs'){
+    showRefsPanel(item.mi);
+  }
+
+  updateSidebarActive(item);
+  updateProgress();
+  updateNavButtons();
+}
+
+function showSlide(mi, si, sl){
+  const mod   = currentCourse.modules[mi];
+  const sub   = mod.submodules[si];
+  const slide = (sub.slides||[])[sl];
+
+  document.getElementById('refs-panel').classList.remove('show');
+  document.getElementById('slide-area').style.display = '';
+
+  // Breadcrumb
+  const bc = `<span>${mod.title}</span> › <span>${sub.title}</span>`;
+
+  // Slide dots
+  const dots = (sub.slides||[]).map((_, i) =>
+    `<div class="dot ${i===sl?'active':done.has(`${mi}-${si}`)&&i<sl?'done':''}" onclick="showNav(${flatNav.findIndex(n=>n.type==='slide'&&n.mi===mi&&n.si===si&&n.sl===i)})"></div>`
+  ).join('');
+
+  const html = renderMD(slide?.content || '');
+  document.getElementById('slide-content-box').innerHTML = `
+    <div class="slide-meta">
+      <span class="slide-breadcrumb">${bc}</span>
+    </div>
+    <div class="slide-nav-bar">
+      <div class="slide-dots">${dots}</div>
+      <span style="font-size:12px;color:var(--muted)">${sl+1}/${(sub.slides||[]).length}</span>
+    </div>
+    <h2>${slide?.title||'Section'}</h2>
+    ${html}
+  `;
+  document.getElementById('slide-counter').textContent =
+    `Lesson ${si+1} · Slide ${sl+1} of ${(sub.slides||[]).length}`;
+
+  // Mark submodule check
+  const chk = document.getElementById(`chk-${mi}-${si}`);
+  if (chk && sl === (sub.slides||[]).length - 1){
+    chk.textContent = '✓';
+    chk.parentElement.classList.add('done');
+  }
+
+  tryKaTeX();
+}
+
+function showRefsPanel(mi){
+  const mod  = currentCourse.modules[mi];
+  const refs = mod.references || [];
+
+  document.getElementById('slide-area').style.display = 'none';
+  const panel = document.getElementById('refs-panel');
+  panel.classList.add('show');
+
+  const items = refs.map((r, i) => {
+    const score = Math.round((r.final_score||0) * 100);
+    return `<div class="ref-item">
+      <div class="ref-num">${i+1}</div>
+      <div class="ref-body">
+        <div class="ref-title">${r.title||'Reference'}</div>
+        <a class="ref-url" href="${r.url}" target="_blank">${r.url}</a>
+        <div class="ref-snippet">${r.snippet||''}</div>
+        <div class="ref-score-bar">
+          <div class="ref-score-fill" style="width:${score}%"></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  panel.innerHTML = `
+    <div class="refs-heading">📎 Module References: ${mod.title}</div>
+    <div class="ref-list">${items || '<p style="color:var(--muted)">No references.</p>'}</div>
+  `;
+  document.getElementById('slide-counter').textContent = `${refs.length} references`;
+}
+
+function updateVideoBar(mod){
+  const bar    = document.getElementById('video-bar');
+  const videos = mod.youtube_videos || [];
+  if (!videos.length){
+    bar.className = 'video-bar';
+    bar.innerHTML = '';
+    return;
+  }
+  bar.className = 'video-bar has-videos';
+  bar.innerHTML = `<span class="video-bar-label">▶ Videos</span>` +
+    videos.map(v => `
+      <a class="video-thumb" href="${v.url}" target="_blank">
+        <div class="video-thumb-inner">
+          <div class="yt-icon">▶</div>
+          <div class="video-title">${v.title}</div>
+          <div class="video-snippet">${v.snippet||''}</div>
+        </div>
+      </a>
+    `).join('');
+}
+
+function updateSidebarActive(item){
+  document.querySelectorAll('.sub-item').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.refs-item').forEach(el => el.classList.remove('active'));
+  if (item.type === 'slide'){
+    const el = document.getElementById(`sub-${item.mi}-${item.si}`);
+    if (el) el.classList.add('active');
+  } else if (item.type === 'refs'){
+    const el = document.getElementById(`refs-item-${item.mi}`);
+    if (el) el.classList.add('active');
+  }
+}
+
+function updateProgress(){
+  const pct = flatNav.length ? Math.round((navIdx / flatNav.length) * 100) : 0;
+  document.getElementById('prog-text').textContent = pct + '%';
+  document.getElementById('prog-fill').style.width  = pct + '%';
+}
+
+function updateNavButtons(){
+  document.getElementById('btn-prev').disabled = navIdx <= 0;
+  document.getElementById('btn-next').disabled = navIdx >= flatNav.length - 1;
+  document.getElementById('btn-next').textContent =
+    navIdx >= flatNav.length - 1 ? '✓ Done' : 'Next →';
+}
+
+// ══════════════════════════════════════════════════════════════
+// MARKDOWN + KATEX
+// ══════════════════════════════════════════════════════════════
+function renderMD(md){
+  if (!md) return '';
+  // Protect LaTeX before markdown parsing
+  const blocks = [];
+  let protected_ = md
+    .replace(/\$\$[\s\S]+?\$\$/g, m => { blocks.push(m); return `LATEX_BLOCK_${blocks.length-1}`; })
+    .replace(/\$[^$\n]+?\$/g, m => { blocks.push(m); return `LATEX_BLOCK_${blocks.length-1}`; });
+
+  let html = marked.parse(protected_);
+
+  // Restore LaTeX tokens
+  blocks.forEach((b, i) => {
+    html = html.replace(`LATEX_BLOCK_${i}`, b);
+  });
+
+  return html;
+}
+
+function tryKaTeX(){
+  if (!window.renderMathInElement) return;
+  const box = document.getElementById('slide-content-box');
+  if (!box) return;
+  try {
+    renderMathInElement(box, {
+      delimiters: [
+        {left:'$$',right:'$$',display:true},
+        {left:'$',right:'$',display:false},
+        {left:'\\[',right:'\\]',display:true},
+        {left:'\\(',right:'\\)',display:false},
+      ],
+      throwOnError: false,
+      strict: false,
+    });
+  } catch(e){}
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.renderMathInElement){} // KaTeX loaded
+});
+
+// ══════════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════════
+function toast(msg, dur=2800){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+loadDashboard();
+</script>
+</body>
+</html>
