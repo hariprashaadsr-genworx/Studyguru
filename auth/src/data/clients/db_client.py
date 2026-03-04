@@ -37,3 +37,28 @@ async def init_db() -> None:
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    # Seed admin user
+    await _seed_admin()
+
+
+async def _seed_admin() -> None:
+    """Ensure the admin user hari@gmail.com exists."""
+    from src.data.models.auth_models import User
+    from src.core.auth.hash import hash_password
+    from sqlalchemy import select
+
+    async with SessionLocal() as session:
+        result = await session.execute(
+            select(User).where(User.email == "hari@gmail.com")
+        )
+        admin = result.scalar_one_or_none()
+        if not admin:
+            admin = User(
+                name="Hari",
+                email="hari@gmail.com",
+                hashed_password=await hash_password("harihari"),
+                role="admin",
+            )
+            session.add(admin)
+            await session.commit()

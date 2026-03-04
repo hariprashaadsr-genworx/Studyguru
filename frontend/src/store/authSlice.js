@@ -48,6 +48,7 @@ const authSlice = createSlice({
   initialState: {
     user:            initUser,
     token:           initToken,
+    role:            initUser?.role || null,
     isAuthenticated: !!(initToken || getRefreshToken()),
     status:          'idle',   // idle | loading
     error:           null,
@@ -63,6 +64,7 @@ const authSlice = createSlice({
       const { access_token, refresh_token, user } = action.payload
       state.token           = access_token
       state.user            = user
+      state.role            = user?.role || 'student'
       state.isAuthenticated = true
       state.authModal       = null
       state.error           = null
@@ -73,6 +75,7 @@ const authSlice = createSlice({
     sessionExpired(state) {
       state.user            = null
       state.token           = null
+      state.role            = null
       state.isAuthenticated = false
     },
   },
@@ -83,6 +86,7 @@ const authSlice = createSlice({
       state.status          = 'idle'
       state.token           = a.payload.access_token
       state.user            = a.payload.user
+      state.role            = a.payload.user?.role || 'student'
       state.isAuthenticated = true
       state.authModal       = null
     }
@@ -99,18 +103,19 @@ const authSlice = createSlice({
 
     builder
       .addCase(logout.fulfilled, (state) => {
-        state.user = null; state.token = null; state.isAuthenticated = false
+        state.user = null; state.token = null; state.role = null; state.isAuthenticated = false
       })
 
     builder
       .addCase(restoreSession.fulfilled, (state, a) => {
         state.user            = a.payload.user
+        state.role            = a.payload.user?.role || 'student'
         state.isAuthenticated = true
         // update stored user
         try { localStorage.setItem('sg_user', JSON.stringify(a.payload.user)) } catch (_) {}
       })
       .addCase(restoreSession.rejected, (state) => {
-        state.user = null; state.token = null; state.isAuthenticated = false
+        state.user = null; state.token = null; state.role = null; state.isAuthenticated = false
       })
   },
 })

@@ -57,6 +57,7 @@ class User(Base):
     hashed_password = Column(Text, nullable=True)   # null for OAuth-only users
     google_id = Column(String(128), unique=True, nullable=True, index=True)
     pic = Column(Text, nullable=True)
+    role = Column(String(20), nullable=False, default="student")  # "admin" or "student"
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)

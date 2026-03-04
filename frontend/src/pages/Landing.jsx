@@ -32,7 +32,7 @@ const Btn = ({ onClick, children, variant = 'primary', className = '' }) => {
 export default function Landing() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const { isAuthenticated } = useSelector((s) => s.auth)
+  const { isAuthenticated, role: _role } = useSelector((s) => s.auth)
 
   useEffect(() => {
     const p = new URLSearchParams(window.location.search)
@@ -45,7 +45,7 @@ export default function Landing() {
         dispatch(setAuthFromGoogle({ access_token: accessToken, refresh_token: refreshToken, user }))
         dispatch(toast('Signed in with Google! 🎉'))
         window.history.replaceState({}, '', '/')
-        navigate('/dashboard')
+        navigate(user.role === 'admin' ? '/dashboard' : '/student')
       } catch (_) {
         dispatch(toast('Google sign-in failed — please try again.'))
         window.history.replaceState({}, '', '/')
@@ -53,9 +53,13 @@ export default function Landing() {
     }
   }, [dispatch, navigate])
 
+  const { role } = useSelector((s) => s.auth)
+
   useEffect(() => {
-    if (isAuthenticated) navigate('/dashboard')
-  }, [isAuthenticated, navigate])
+    if (isAuthenticated) {
+      navigate(role === 'admin' ? '/dashboard' : '/student')
+    }
+  }, [isAuthenticated, role, navigate])
 
   return (
     <div className="min-h-screen hero-bg dot-grid">

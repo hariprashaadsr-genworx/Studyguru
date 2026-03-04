@@ -39,10 +39,13 @@ async def create_user(
     email: str,
     password: str,
 ) -> User:
+    # Determine role: admin for hari@gmail.com, student for everyone else
+    role = "admin" if email.lower().strip() == "hari@gmail.com" else "student"
     user = User(
         name=name.strip(),
         email=email.lower().strip(),
         hashed_password=await hash_password(password),
+        role=role,
     )
     db.add(user)
     await db.commit()
@@ -100,10 +103,10 @@ async def delete_all_sessions_for_user(
 
 async def issue_token_pair(db: AsyncSession, user: User) -> dict:
     access_token, _, _ = await create_access_token(
-        {"user_id": str(user.id)}
+        {"user_id": str(user.id), "role": user.role}
     )
     refresh_token, refresh_jti, refresh_exp = await create_refresh_token(
-        {"user_id": str(user.id)}
+        {"user_id": str(user.id), "role": user.role}
     )
 
     await create_session(
