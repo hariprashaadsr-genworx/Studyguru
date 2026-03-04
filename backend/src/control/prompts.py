@@ -79,6 +79,20 @@ def planning_prompt(course_title: str, skill_level: int, prof: dict, modules: li
     min_slides, max_slides = prof.get("slides_range", (5, 8))
     questions_count = prof.get("questions_per_topic", 2)
 
+    # Build structure JSON outside the f-string to avoid {{}} dict/set confusion
+    structure_list = [
+        {
+            "module_id": m["module_id"],
+            "title": m["title"],
+            "submodules": [
+                {"id": s["submodule_id"], "title": s["title"]}
+                for s in m["submodules"]
+            ],
+        }
+        for m in modules
+    ]
+    structure_json = json.dumps(structure_list, indent=2)
+
     return f"""You are a senior curriculum architect designing a structured academic course.
 
 Course Title: "{course_title}"
@@ -178,11 +192,7 @@ RULES:
 ══════════════════════════════════════════
 COURSE STRUCTURE INPUT
 ══════════════════════════════════════════
-{json.dumps([{{
-    "module_id": m["module_id"],
-    "title": m["title"],
-    "submodules": [{{"id": s["submodule_id"], "title": s["title"]}} for s in m["submodules"]]
-}} for m in modules], indent=2)}
+{structure_json}
 
 ══════════════════════════════════════════
 RETURN STRICT JSON (NO MARKDOWN)

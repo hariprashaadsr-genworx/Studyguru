@@ -242,10 +242,9 @@ async def planning_agent(state: CourseState, config: RunnableConfig) -> CourseSt
         user=prompt,
     )
 
-    clean = repair_json(raw)
+    stripped = await _strip_json(raw)
+    clean = repair_json(stripped)
     data = json.loads(clean)
-
-    data = json.loads(await _strip_json(raw))
 
     # Persist subject domain and subject type
     state["subject_domain"] = data.get(
