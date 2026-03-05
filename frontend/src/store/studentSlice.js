@@ -6,6 +6,9 @@ import {
   fetchMyCustomCourse,
   startCustomization,
   fetchStudentCourse,
+  enrollInCourse,
+  fetchEnrollments,
+  fetchEnrollment,
 } from '../api/student'
 
 // ── Thunks ──────────────────────────────────────────────────────────────────
@@ -36,6 +39,22 @@ export const loadCustomCourseData = createAsyncThunk(
 export const loadBaseCourseForViewing = createAsyncThunk(
   'student/loadBaseCourseForViewing',
   async (courseId) => fetchStudentCourse(courseId)
+)
+
+export const enrollStudent = createAsyncThunk(
+  'student/enroll',
+  async ({ userId, courseId, selectedModules }) =>
+    enrollInCourse(userId, courseId, selectedModules)
+)
+
+export const loadEnrollments = createAsyncThunk(
+  'student/loadEnrollments',
+  async (userId) => fetchEnrollments(userId)
+)
+
+export const loadEnrollmentData = createAsyncThunk(
+  'student/loadEnrollmentData',
+  async (enrollmentId) => fetchEnrollment(enrollmentId)
 )
 
 // ── Slice ───────────────────────────────────────────────────────────────────
@@ -77,6 +96,14 @@ const studentSlice = createSlice({
     // Viewing a custom course
     viewingCourse: null,
     viewingStatus: 'idle',
+
+    // Enrollments
+    enrollments: [],
+    enrollmentsStatus: 'idle',
+
+    // Enrollment viewer data (loaded from enrollment endpoint)
+    enrollmentData: null,
+    enrollmentStatus: 'idle',
 
     // Current step in student flow
     step: 'browse', // browse | select | customize | generating | view
@@ -171,6 +198,10 @@ const studentSlice = createSlice({
       state.viewingCourse = null
       state.viewingStatus = 'idle'
     },
+    clearEnrollmentData(state) {
+      state.enrollmentData = null
+      state.enrollmentStatus = 'idle'
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -202,6 +233,16 @@ const studentSlice = createSlice({
       .addCase(loadBaseCourseForViewing.pending, (s) => { s.viewingStatus = 'loading' })
       .addCase(loadBaseCourseForViewing.fulfilled, (s, a) => { s.viewingStatus = 'succeeded'; s.viewingCourse = a.payload })
       .addCase(loadBaseCourseForViewing.rejected, (s) => { s.viewingStatus = 'failed' })
+
+    builder
+      .addCase(loadEnrollments.pending, (s) => { s.enrollmentsStatus = 'loading' })
+      .addCase(loadEnrollments.fulfilled, (s, a) => { s.enrollmentsStatus = 'succeeded'; s.enrollments = a.payload })
+      .addCase(loadEnrollments.rejected, (s) => { s.enrollmentsStatus = 'failed' })
+
+    builder
+      .addCase(loadEnrollmentData.pending, (s) => { s.enrollmentStatus = 'loading' })
+      .addCase(loadEnrollmentData.fulfilled, (s, a) => { s.enrollmentStatus = 'succeeded'; s.enrollmentData = a.payload })
+      .addCase(loadEnrollmentData.rejected, (s) => { s.enrollmentStatus = 'failed' })
   },
 })
 
@@ -219,6 +260,7 @@ export const {
   customJobError,
   setViewingCourse,
   clearViewingCourse,
+  clearEnrollmentData,
 } = studentSlice.actions
 
 export default studentSlice.reducer

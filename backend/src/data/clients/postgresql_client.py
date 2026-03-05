@@ -33,6 +33,7 @@ async def init_db() -> None:
     import src.data.models.postgres.course       # noqa: F401
     import src.data.models.postgres.submodules    # noqa: F401
     import src.data.models.postgres.custom_course # noqa: F401
+    import src.data.models.postgres.enrollment    # noqa: F401
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

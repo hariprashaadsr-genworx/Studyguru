@@ -10,14 +10,28 @@ from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from json_repair import repair_json
 
 from src.data.repositories.crud import list_courses, get_course
 from src.data.repositories.custom_crud import (
     get_custom_courses_for_user,
     get_custom_course,
 )
+from src.data.repositories.enrollment_crud import (
+    create_enrollment,
+    get_enrollment,
+    get_enrollments_for_user,
+    get_enrollment_for_course,
+    update_enrollment_progress,
+    complete_enrollment,
+    get_questions_for_module,
+    get_final_questions,
+    save_questions,
+)
 from src.data.clients.postgresql_client import SessionLocal
 from src.control.workflows.student_customization_engine import run_customization_workflow
+from src.control.agents.agent import _llm
+import src.control.prompts as P
 
 
 # ── In-memory job tracker for customization ──────────────────────────────────
@@ -178,3 +192,328 @@ async def get_customization_result(job_id: str):
     if job["status"] != "complete":
         raise HTTPException(202, "Still processing")
     return JSONResponse(job["result"])
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Enrollment + Progress + Questions
+# ══════════════════════════════════════════════════════════════════════════════
+
+async def enroll_student(user_id: str, course_id: str, selected_modules: list, db: AsyncSession):
+    """Create or return existing enrollment."""
+    existing = await get_enrollment_for_course(db, user_id, course_id)
+    if existing:
+        return JSONResponse({
+            "enrollment_id": existing.enrollment_id,
+            "already_enrolled": True,
+        })
+
+    enrollment_id = str(uuid.uuid4())
+    await create_enrollment(db, enrollment_id, user_id, course_id, selected_modules)
+    return JSONResponse({
+        "enrollment_id": enrollment_id,
+        "already_enrolled": False,
+    })
+
+
+async def get_student_enrollments(user_id: str, db: AsyncSession):
+    """List all enrollments for a user, enriched with course metadata."""
+    enrollments = await get_enrollments_for_user(db, user_id)
+
+    enriched = []
+    for e in enrollments:
+        course = await get_course(db, e["course_id"])
+        enriched.append({
+            **e,
+            "course_title": course.get("course_title", "") if course else "",
+            "subject_domain": course.get("subject_domain", "") if course else "",
+            "skill_level": course.get("skill_level", 3) if course else 3,
+            "skill_label": course.get("skill_label", "") if course else "",
+            "total_modules": course.get("total_modules", 0) if course else 0,
+            "total_submodules": course.get("total_submodules", 0) if course else 0,
+        })
+
+    return JSONResponse(enriched)
+
+
+async def get_enrollment_data(enrollment_id: str, db: AsyncSession):
+    """Get enrollment + filtered course data."""
+    enrollment = await get_enrollment(db, enrollment_id)
+    if not enrollment:
+        raise HTTPException(404, "Enrollment not found")
+
+    course = await get_course(db, enrollment.course_id)
+    if not course:
+        raise HTTPException(404, "Course not found")
+
+    # Filter modules/submodules based on enrollment selection
+    sel_lookup = {}
+    for sel in (enrollment.selected_modules or []):
+        sel_lookup[sel["module_id"]] = set(sel.get("submodule_ids", []))
+
+    filtered_modules = []
+    for mod in course.get("modules", []):
+        mid = mod.get("module_id", "")
+        if mid not in sel_lookup:
+            continue
+        selected_sub_ids = sel_lookup[mid]
+        filtered_subs = [
+            sub for sub in mod.get("submodules", [])
+            if sub.get("submodule_id", "") in selected_sub_ids
+        ]
+        if filtered_subs:
+            filtered_modules.append({**mod, "submodules": filtered_subs})
+
+    progress = enrollment.progress or {"visited": [], "module_tests_passed": [], "final_passed": False}
+
+    return JSONResponse({
+        "enrollment_id": enrollment.enrollment_id,
+        "course_id": enrollment.course_id,
+        "user_id": enrollment.user_id,
+        "status": enrollment.status,
+        "selected_modules": enrollment.selected_modules,
+        "progress": progress,
+        "course_title": course.get("course_title", ""),
+        "subject_domain": course.get("subject_domain", ""),
+        "skill_level": course.get("skill_level", 3),
+        "skill_label": course.get("skill_label", ""),
+        "modules": filtered_modules,
+    })
+
+
+async def mark_submodule_visited(enrollment_id: str, submodule_key: str, db: AsyncSession):
+    """Mark a submodule as visited in the enrollment progress."""
+    enrollment = await get_enrollment(db, enrollment_id)
+    if not enrollment:
+        raise HTTPException(404, "Enrollment not found")
+
+    progress = enrollment.progress or {"visited": [], "module_tests_passed": [], "final_passed": False}
+    visited = progress.get("visited", [])
+
+    if submodule_key not in visited:
+        visited.append(submodule_key)
+        progress["visited"] = visited
+        await update_enrollment_progress(db, enrollment_id, progress)
+
+    return JSONResponse({"ok": True, "progress": progress})
+
+
+async def _generate_questions_for_module(course_id: str, module_id: str, course_data: dict, db: AsyncSession):
+    """Generate and cache 5 questions for a module."""
+    # Find the module in course data
+    target_mod = None
+    for mod in course_data.get("modules", []):
+        if mod.get("module_id") == module_id:
+            target_mod = mod
+            break
+
+    if not target_mod:
+        return []
+
+    submodule_titles = [s.get("title", "") for s in target_mod.get("submodules", [])]
+
+    prompt = P.module_questions_prompt(
+        course_title=course_data.get("course_title", ""),
+        module_title=target_mod.get("title", ""),
+        submodule_titles=submodule_titles,
+        skill_level=course_data.get("skill_level", 3),
+    )
+
+    raw = await _llm(
+        system="Expert quiz generator. Return ONLY valid JSON array. No markdown fences.",
+        user=prompt,
+    )
+
+    raw = raw.strip()
+    if raw.startswith("```"):
+        parts = raw.split("```")
+        raw = parts[1] if len(parts) > 1 else raw
+        if raw.startswith("json"):
+            raw = raw[4:]
+        raw = raw.strip()
+
+    cleaned = repair_json(raw)
+    questions_data = json.loads(cleaned)
+
+    # Ensure it's a list and has max 5
+    if not isinstance(questions_data, list):
+        questions_data = [questions_data]
+    questions_data = questions_data[:5]
+
+    # Save to DB
+    to_save = []
+    for q in questions_data:
+        to_save.append({
+            "course_id": course_id,
+            "module_id": module_id,
+            "question_type": q.get("question_type", "mcq"),
+            "question_text": q.get("question_text", ""),
+            "options": q.get("options", []),
+            "correct_answer": q.get("correct_answer", ""),
+            "hints": q.get("hints", ["", "", ""]),
+            "is_final": False,
+        })
+
+    await save_questions(db, to_save)
+    return to_save
+
+
+async def _generate_final_questions(course_id: str, course_data: dict, db: AsyncSession):
+    """Generate and cache 15 final assessment questions."""
+    module_summaries = []
+    for mod in course_data.get("modules", []):
+        module_summaries.append({
+            "title": mod.get("title", ""),
+            "submodule_titles": [s.get("title", "") for s in mod.get("submodules", [])],
+        })
+
+    prompt = P.final_assessment_prompt(
+        course_title=course_data.get("course_title", ""),
+        module_summaries=module_summaries,
+        skill_level=course_data.get("skill_level", 3),
+    )
+
+    raw = await _llm(
+        system="Expert quiz generator. Return ONLY valid JSON array. No markdown fences.",
+        user=prompt,
+    )
+
+    raw = raw.strip()
+    if raw.startswith("```"):
+        parts = raw.split("```")
+        raw = parts[1] if len(parts) > 1 else raw
+        if raw.startswith("json"):
+            raw = raw[4:]
+        raw = raw.strip()
+
+    cleaned = repair_json(raw)
+    questions_data = json.loads(cleaned)
+
+    if not isinstance(questions_data, list):
+        questions_data = [questions_data]
+    questions_data = questions_data[:15]
+
+    to_save = []
+    for q in questions_data:
+        to_save.append({
+            "course_id": course_id,
+            "module_id": None,
+            "question_type": q.get("question_type", "mcq"),
+            "question_text": q.get("question_text", ""),
+            "options": q.get("options", []),
+            "correct_answer": q.get("correct_answer", ""),
+            "hints": q.get("hints", ["", "", ""]),
+            "is_final": True,
+        })
+
+    await save_questions(db, to_save)
+    return to_save
+
+
+async def get_or_generate_module_questions(enrollment_id: str, module_id: str, db: AsyncSession):
+    """Get cached questions or generate new ones for a module."""
+    enrollment = await get_enrollment(db, enrollment_id)
+    if not enrollment:
+        raise HTTPException(404, "Enrollment not found")
+
+    # Check cache first
+    existing = await get_questions_for_module(db, enrollment.course_id, module_id)
+    if existing:
+        return JSONResponse(existing)
+
+    # Generate new questions
+    course_data = await get_course(db, enrollment.course_id)
+    if not course_data:
+        raise HTTPException(404, "Course not found")
+
+    questions = await _generate_questions_for_module(enrollment.course_id, module_id, course_data, db)
+
+    return JSONResponse([
+        {
+            "question_type": q["question_type"],
+            "question_text": q["question_text"],
+            "options": q["options"],
+            "correct_answer": q["correct_answer"],
+            "hints": q["hints"],
+        }
+        for q in questions
+    ])
+
+
+async def get_or_generate_final_questions(enrollment_id: str, db: AsyncSession):
+    """Get cached final questions or generate new ones."""
+    enrollment = await get_enrollment(db, enrollment_id)
+    if not enrollment:
+        raise HTTPException(404, "Enrollment not found")
+
+    existing = await get_final_questions(db, enrollment.course_id)
+    if existing:
+        return JSONResponse(existing)
+
+    course_data = await get_course(db, enrollment.course_id)
+    if not course_data:
+        raise HTTPException(404, "Course not found")
+
+    questions = await _generate_final_questions(enrollment.course_id, course_data, db)
+
+    return JSONResponse([
+        {
+            "question_type": q["question_type"],
+            "question_text": q["question_text"],
+            "options": q["options"],
+            "correct_answer": q["correct_answer"],
+            "hints": q["hints"],
+        }
+        for q in questions
+    ])
+
+
+async def submit_module_test_service(enrollment_id: str, module_id: str, score: int, total: int, db: AsyncSession):
+    """Record module test result. Pass = score >= 60%."""
+    enrollment = await get_enrollment(db, enrollment_id)
+    if not enrollment:
+        raise HTTPException(404, "Enrollment not found")
+
+    progress = enrollment.progress or {"visited": [], "module_tests_passed": [], "final_passed": False}
+    passed = score >= (total * 0.6)  # 60% pass threshold
+
+    if passed and module_id not in progress.get("module_tests_passed", []):
+        progress.setdefault("module_tests_passed", []).append(module_id)
+        await update_enrollment_progress(db, enrollment_id, progress)
+
+    return JSONResponse({
+        "passed": passed,
+        "score": score,
+        "total": total,
+        "progress": progress,
+    })
+
+
+async def submit_final_test_service(enrollment_id: str, score: int, total: int, db: AsyncSession):
+    """Record final assessment result."""
+    enrollment = await get_enrollment(db, enrollment_id)
+    if not enrollment:
+        raise HTTPException(404, "Enrollment not found")
+
+    progress = enrollment.progress or {"visited": [], "module_tests_passed": [], "final_passed": False}
+    passed = score >= (total * 0.6)
+
+    if passed:
+        progress["final_passed"] = True
+        await update_enrollment_progress(db, enrollment_id, progress)
+
+    return JSONResponse({
+        "passed": passed,
+        "score": score,
+        "total": total,
+        "progress": progress,
+    })
+
+
+async def complete_enrollment_service(enrollment_id: str, db: AsyncSession):
+    """Mark enrollment as completed (Done button)."""
+    enrollment = await get_enrollment(db, enrollment_id)
+    if not enrollment:
+        raise HTTPException(404, "Enrollment not found")
+
+    await complete_enrollment(db, enrollment_id)
+    return JSONResponse({"ok": True, "status": "completed"})

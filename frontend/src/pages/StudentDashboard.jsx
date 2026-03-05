@@ -8,6 +8,8 @@ import {
   toggleSubmodule,
   setStep,
   resetCustomFlow,
+  loadEnrollments,
+  enrollStudent,
 } from '../store/studentSlice'
 import { logout } from '../store/authSlice'
 import { toast } from '../store/uiSlice'
@@ -43,24 +45,130 @@ function Skeleton() {
   )
 }
 
+// ── Enrolled courses section ────────────────────────────────────────────────
+
+function EnrolledCourses() {
+  const navigate = useNavigate()
+  const { enrollments, enrollmentsStatus } = useSelector((s) => s.student)
+
+  const active = (enrollments || []).filter((e) => e.status === 'active')
+  const completed = (enrollments || []).filter((e) => e.status === 'completed')
+
+  if (enrollmentsStatus === 'loading') {
+    return (
+      <div className="mb-10">
+        <h2 className="font-display text-[18px] font-bold text-white mb-4">My Courses</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1,2].map((i) => <Skeleton key={i} />)}
+        </div>
+      </div>
+    )
+  }
+
+  if (!active.length && !completed.length) return null
+
+  return (
+    <div className="mb-10">
+      {active.length > 0 && (
+        <>
+          <h2 className="font-display text-[18px] font-bold text-white mb-4">My Active Courses</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            {active.map((e) => {
+              const progress = e.progress || {}
+              const visited = (progress.visited || []).length
+              const passed = (progress.module_tests_passed || []).length
+              return (
+                <div
+                  key={e.enrollment_id}
+                  onClick={() => navigate(`/student/view/${e.enrollment_id}`)}
+                  className="group rounded-lg border border-accent/30 bg-navy-700/40 hover:bg-navy-700/70 overflow-hidden cursor-pointer transition-all shadow-card hover:shadow-card-hover"
+                >
+                  <div className="h-[3px] bg-gradient-to-r from-success to-accent" />
+                  <div className="p-5">
+                    <div className="text-[11px] font-bold uppercase tracking-widest text-accent/70 mb-2">
+                      {e.subject_domain || 'Course'}
+                    </div>
+                    <h3 className="text-[15px] font-semibold text-white mb-3 leading-snug group-hover:text-accent-light transition-colors">
+                      {e.course_title}
+                    </h3>
+                    <div className="flex gap-4 text-[12px] text-navy-300 mb-3">
+                      <span>{visited} visited</span>
+                      <span>{passed} tests passed</span>
+                    </div>
+                    <div className="h-1.5 bg-navy-800 rounded-full overflow-hidden mb-3">
+                      <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${Math.min(100, visited * 10)}%` }} />
+                    </div>
+                    <div className="flex items-center justify-between pt-3 border-t border-navy-600/40">
+                      <span className="text-[11px] text-navy-400">
+                        {e.created_at ? new Date(e.created_at).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : ''}
+                      </span>
+                      <span className="text-[12px] font-semibold text-accent group-hover:text-accent-light transition-colors">
+                        Continue →
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+
+      {completed.length > 0 && (
+        <>
+          <h2 className="font-display text-[16px] font-bold text-navy-300 mb-3">Completed Courses</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            {completed.map((e) => (
+              <div
+                key={e.enrollment_id}
+                className="rounded-lg border border-navy-600/30 bg-navy-700/20 overflow-hidden opacity-70"
+              >
+                <div className="h-[3px] bg-success" />
+                <div className="p-5">
+                  <h3 className="text-[14px] font-semibold text-navy-200 mb-2">{e.course_title}</h3>
+                  <span className="text-[11px] text-success font-bold">✓ Completed</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 // ── Browse step: Course cards ───────────────────────────────────────────────
 
 function BrowseCourses() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const { courses, coursesStatus } = useSelector((s) => s.student)
+  const { courses, coursesStatus, enrollments } = useSelector((s) => s.student)
 
   useEffect(() => {
     dispatch(loadStudentCourses())
   }, [dispatch])
 
+  // Build a map of course_id → enrollment for "open session" detection
+  const enrollmentByCourse = {}
+  for (const e of (enrollments || [])) {
+    if (e.status === 'active') {
+      enrollmentByCourse[e.course_id] = e
+    }
+  }
+
   const selectCourse = (courseId) => {
+    // If already enrolled, go directly to the enrollment
+    if (enrollmentByCourse[courseId]) {
+      navigate(`/student/view/${enrollmentByCourse[courseId].enrollment_id}`)
+      return
+    }
     dispatch(loadCourseStructure(courseId))
   }
 
   return (
     <div>
-      {/* All Available Courses */}
+      <EnrolledCourses />
+
       <div className="flex items-center justify-between mb-5">
         <h2 className="font-display text-[18px] font-bold text-white">Available Courses</h2>
         <button onClick={() => dispatch(loadStudentCourses())}
@@ -83,13 +191,19 @@ function BrowseCourses() {
         {coursesStatus === 'succeeded' && courses.map((c) => {
           const lvl = c.skill_level || 3
           const badge = LEVEL_BADGE[lvl] || LEVEL_BADGE[3]
+          const hasEnrollment = !!enrollmentByCourse[c.course_id]
+
           return (
             <div
               key={c.course_id}
               onClick={() => selectCourse(c.course_id)}
-              className="group rounded-lg border border-navy-600/50 bg-navy-700/40 hover:bg-navy-700/70 hover:border-accent/30 overflow-hidden cursor-pointer transition-all shadow-card hover:shadow-card-hover"
+              className={`group rounded-lg border overflow-hidden cursor-pointer transition-all shadow-card hover:shadow-card-hover ${
+                hasEnrollment
+                  ? 'border-warn/40 bg-navy-700/40 hover:bg-navy-700/70'
+                  : 'border-navy-600/50 bg-navy-700/40 hover:bg-navy-700/70 hover:border-accent/30'
+              }`}
             >
-              <div className="h-[3px] bg-gradient-to-r from-accent2 to-accent" />
+              <div className={`h-[3px] ${hasEnrollment ? 'bg-gradient-to-r from-warn to-accent' : 'bg-gradient-to-r from-accent2 to-accent'}`} />
               <div className="p-5">
                 <div className="text-[11px] font-bold uppercase tracking-widest text-accent/70 mb-2">
                   {c.subject_domain || 'Course'}
@@ -97,6 +211,13 @@ function BrowseCourses() {
                 <h3 className="text-[15px] font-semibold text-white mb-3 leading-snug group-hover:text-accent-light transition-colors">
                   {c.course_title}
                 </h3>
+
+                {hasEnrollment && (
+                  <div className="mb-3 px-3 py-2 rounded-lg bg-warn/10 border border-warn/20 text-warn text-[11px] font-semibold flex items-center gap-2">
+                    <span>⚠</span> You have an open session with this course
+                  </div>
+                )}
+
                 <div className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full font-semibold border mb-4 ${badge.cls}`}>
                   {'★'.repeat(lvl)} {c.skill_label || badge.label}
                 </div>
@@ -110,7 +231,7 @@ function BrowseCourses() {
                     {c.created_at ? new Date(c.created_at).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : ''}
                   </span>
                   <span className="text-[12px] font-semibold text-accent group-hover:text-accent-light transition-colors">
-                    Select →
+                    {hasEnrollment ? 'Continue →' : 'Select →'}
                   </span>
                 </div>
               </div>
@@ -128,6 +249,8 @@ function ModuleSelector() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const { structure, structureStatus, selectedModules } = useSelector((s) => s.student)
+  const { user } = useSelector((s) => s.auth)
+  const [enrolling, setEnrolling] = useState(false)
 
   if (structureStatus === 'loading') {
     return (
@@ -143,9 +266,11 @@ function ModuleSelector() {
     return acc + Object.values(mod.submodules || {}).filter(Boolean).length
   }, 0)
 
-  const handleStartLearning = () => {
-    if (totalSelected === 0) return
-    // Build selected modules/submodules for the viewer URL
+  const handleStartLearning = async () => {
+    if (totalSelected === 0 || enrolling) return
+    setEnrolling(true)
+
+    // Build selected modules array
     const selMods = []
     for (const [moduleId, modData] of Object.entries(selectedModules)) {
       const subIds = Object.entries(modData.submodules || {})
@@ -153,10 +278,21 @@ function ModuleSelector() {
         .map(([id]) => id)
       if (subIds.length > 0) selMods.push({ module_id: moduleId, submodule_ids: subIds })
     }
-    // Navigate to the base course viewer with selected modules encoded in state
-    navigate(`/student/view/${structure.course_id}`, {
-      state: { selectedModules: selMods }
-    })
+
+    try {
+      // Enroll via API — creates persistent custom course enrollment
+      const result = await dispatch(enrollStudent({
+        userId: user?.user_id || user?.id || user?.email,
+        courseId: structure.course_id,
+        selectedModules: selMods,
+      })).unwrap()
+
+      // Navigate to the enrollment viewer
+      navigate(`/student/view/${result.enrollment_id}`)
+    } catch (e) {
+      dispatch(toast(e.message || 'Enrollment failed'))
+      setEnrolling(false)
+    }
   }
 
   return (
@@ -179,7 +315,6 @@ function ModuleSelector() {
 
           return (
             <div key={mod.module_id} className="rounded-lg border border-navy-700/50 bg-navy-900/50 overflow-hidden">
-              {/* Module header */}
               <label className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-navy-800/60 transition">
                 <input
                   type="checkbox"
@@ -195,7 +330,6 @@ function ModuleSelector() {
                 </span>
               </label>
 
-              {/* Submodules */}
               <div className="border-t border-navy-800/80 px-4 py-2 space-y-1">
                 {mod.submodules.map((sub) => {
                   const isChecked = modState.submodules[sub.submodule_id] || false
@@ -223,17 +357,16 @@ function ModuleSelector() {
         })}
       </div>
 
-      {/* Footer */}
       <div className="flex items-center justify-between px-1 py-4 border-t border-navy-700/60">
         <span className="text-[13px] text-navy-400">
           {totalSelected} lesson{totalSelected !== 1 ? 's' : ''} selected
         </span>
         <button
           onClick={handleStartLearning}
-          disabled={totalSelected === 0}
+          disabled={totalSelected === 0 || enrolling}
           className="px-6 py-2.5 rounded-lg text-[13px] font-bold bg-accent text-white hover:bg-accent2 disabled:opacity-30 disabled:cursor-not-allowed shadow-glow transition"
         >
-          Start Learning →
+          {enrolling ? 'Enrolling…' : 'Start Learning →'}
         </button>
       </div>
     </div>
@@ -249,6 +382,13 @@ export default function StudentDashboard() {
   const { user } = useSelector((s) => s.auth)
   const { step } = useSelector((s) => s.student)
 
+  useEffect(() => {
+    if (user) {
+      const userId = user.user_id || user.id || user.email
+      if (userId) dispatch(loadEnrollments(userId))
+    }
+  }, [user, dispatch])
+
   const handleLogout = async () => {
     await dispatch(logout())
     dispatch(toast('Signed out successfully'))
@@ -257,7 +397,6 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen bg-navy-800 dot-grid">
-      {/* Nav */}
       <nav className="sticky top-0 z-50 bg-navy-900/95 backdrop-blur-xl border-b border-navy-600/60">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Logo />
@@ -279,7 +418,6 @@ export default function StudentDashboard() {
       </nav>
 
       <div className="max-w-6xl mx-auto px-6 py-10">
-        {/* Header */}
         <div className="mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-[11px] font-semibold mb-3 uppercase tracking-wider">
             Student Learning Portal
@@ -290,7 +428,6 @@ export default function StudentDashboard() {
           <p className="text-navy-300 text-[14px]">Browse courses, select topics, and customize your learning experience.</p>
         </div>
 
-        {/* Step content */}
         {step === 'browse' && <BrowseCourses />}
         {step === 'select' && <ModuleSelector />}
       </div>

@@ -454,3 +454,128 @@ CONTEXT FROM RESEARCH:
 ══════════════════════════════════════════
 Write ALL {len(sections)} slides now. Start with ---SLIDE--- for each one.
 """
+
+
+# ── Question Generation Prompts ──────────────────────────────────────────────
+
+def module_questions_prompt(
+    course_title: str,
+    module_title: str,
+    submodule_titles: list,
+    skill_level: int,
+) -> str:
+    """Generate 5 questions (MCQ + True/False mix) for a module, each with 3 progressive hints."""
+    topics = "\n".join(f"  - {t}" for t in submodule_titles)
+
+    return f"""You are an expert quiz creator for educational courses.
+
+Course: "{course_title}"
+Module: "{module_title}"
+Skill Level: {skill_level}/5
+Topics covered in this module:
+{topics}
+
+TASK:
+Generate exactly 5 assessment questions for this module. Use a MIX of:
+  - Multiple Choice Questions (MCQ) — 4 options each (A, B, C, D)
+  - True/False questions
+
+Aim for roughly 3 MCQs and 2 True/False, but adjust based on content.
+
+For EACH question, provide exactly 3 progressive hints:
+  - Hint 1: A gentle nudge in the right direction (vague)
+  - Hint 2: A more specific clue that narrows down the answer
+  - Hint 3: A very strong hint that almost gives away the answer
+
+RULES:
+- Questions must test understanding, not just memorization
+- Cover different topics across the module's submodules
+- MCQ options must be plausible (no obviously wrong answers)
+- Correct answer for MCQ must be the option text (e.g., "Photosynthesis")
+- Correct answer for True/False must be exactly "True" or "False"
+- Hints should progressively guide the student to the correct answer
+
+RETURN STRICT JSON ONLY — no markdown fences, no commentary:
+[
+  {{
+    "question_type": "mcq",
+    "question_text": "What is ...?",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correct_answer": "Option B",
+    "hints": ["Hint 1...", "Hint 2...", "Hint 3..."]
+  }},
+  {{
+    "question_type": "true_false",
+    "question_text": "Statement to evaluate",
+    "options": ["True", "False"],
+    "correct_answer": "True",
+    "hints": ["Hint 1...", "Hint 2...", "Hint 3..."]
+  }}
+]
+
+Generate exactly 5 questions now.
+"""
+
+
+def final_assessment_prompt(
+    course_title: str,
+    module_summaries: list,
+    skill_level: int,
+) -> str:
+    """Generate 15 final assessment questions covering the entire course."""
+    modules_text = "\n".join(
+        f"  Module: {m['title']}\n    Topics: {', '.join(m['submodule_titles'])}"
+        for m in module_summaries
+    )
+
+    return f"""You are an expert quiz creator for educational courses.
+
+Course: "{course_title}"
+Skill Level: {skill_level}/5
+
+This is the FINAL ASSESSMENT covering the entire course.
+Modules and topics:
+{modules_text}
+
+TASK:
+Generate exactly 15 assessment questions covering ALL modules proportionally.
+Use a MIX of:
+  - Multiple Choice Questions (MCQ) — 4 options each (A, B, C, D)
+  - True/False questions
+
+Aim for roughly 10 MCQs and 5 True/False, but adjust based on content.
+
+For EACH question, provide exactly 3 progressive hints:
+  - Hint 1: A gentle nudge in the right direction (vague)
+  - Hint 2: A more specific clue that narrows down the answer
+  - Hint 3: A very strong hint that almost gives away the answer
+
+RULES:
+- Questions must test deeper understanding and connections between topics
+- Distribute questions across ALL modules (not just the first or last)
+- MCQ options must be plausible
+- Correct answer for MCQ must be the option text
+- Correct answer for True/False must be exactly "True" or "False"
+- Include at least 1 question per module
+- Some questions should test cross-module understanding
+
+RETURN STRICT JSON ONLY — no markdown fences, no commentary:
+[
+  {{
+    "question_type": "mcq",
+    "question_text": "What is ...?",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correct_answer": "Option B",
+    "hints": ["Hint 1...", "Hint 2...", "Hint 3..."]
+  }},
+  {{
+    "question_type": "true_false",
+    "question_text": "Statement to evaluate",
+    "options": ["True", "False"],
+    "correct_answer": "False",
+    "hints": ["Hint 1...", "Hint 2...", "Hint 3..."]
+  }}
+]
+
+Generate exactly 15 questions now.
+"""
