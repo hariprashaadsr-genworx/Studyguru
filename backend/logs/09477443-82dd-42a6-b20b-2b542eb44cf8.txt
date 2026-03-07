@@ -1,0 +1,88 @@
+======================================================================
+  COURSE ENGINE — GENERATION LOG
+  Job     : 09477443-82dd-42a6-b20b-2b542eb44cf8
+  Course  : Class 10 Chemistry: Introduction to Organic Chemistry
+  Level   : Standard
+  Modules : 1
+  Started : 2026-03-06 20:45:09 UTC
+======================================================================
+
+
+[STEP 03] Planning Agent done
+         Class 10 Chemistry
+         2026-03-06 20:45:14 UTC
+
+[STEP 06] Search: M1.S1
+         10 results
+         2026-03-06 20:45:18 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-06 20:45:18 UTC
+
+[STEP 08] Context built
+         222 words
+         2026-03-06 20:45:22 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-06 20:45:28 UTC
+
+[STEP 10] Written: Carbon Atom and Covalent Bonding
+         6 slides
+         2026-03-06 20:45:36 UTC
+
+[STEP 11] Stored M1.S1
+         None
+         2026-03-06 20:45:36 UTC
+
+[STEP 12] Submodule loop
+         1 remaining
+         2026-03-06 20:45:36 UTC
+
+[STEP 06] Search: M1.S2
+         10 results
+         2026-03-06 20:45:40 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-06 20:45:40 UTC
+
+[STEP 08] Context built
+         273 words
+         2026-03-06 20:45:43 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-06 20:45:47 UTC
+
+[STEP 10] Written: Hybridisation and Molecular Geometry
+         7 slides
+         2026-03-06 20:46:58 UTC
+
+[STEP 11] Stored M1.S2
+         None
+         2026-03-06 20:46:58 UTC
+
+[STEP 12] Submodule loop
+         0 remaining
+         2026-03-06 20:46:58 UTC
+
+[STEP 13] Refs for 'Foundations of Organic Chemistry'
+         8 refs
+         2026-03-06 20:46:58 UTC
+
+[STEP 14] Videos for 'Foundations of Organic Chemistry'
+         3 found
+         2026-03-06 20:47:01 UTC
+
+======================================================================
+  COMPLETE  2026-03-06 20:47:01 UTC
+  Modules   : 1
+  Submodules: 2
+  Slides    : 13
+  References: 8
+  Videos    : 3
+  Backend   : None
+======================================================================
+

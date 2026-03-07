@@ -48,6 +48,7 @@ class UserOut(BaseModel):
     name: str
     email: str
     pic: Optional[str] = None
+    role: str = "student"
     is_active: bool
 
     model_config = {"from_attributes": True}

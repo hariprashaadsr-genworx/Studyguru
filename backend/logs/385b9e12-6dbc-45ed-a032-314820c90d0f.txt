@@ -1,0 +1,420 @@
+======================================================================
+  COURSE ENGINE — GENERATION LOG
+  Job     : 385b9e12-6dbc-45ed-a032-314820c90d0f
+  Course  : Indian Political Economy and Nationalism
+  Level   : Intermediate
+  Modules : 4
+  Started : 2026-03-04 09:07:55 UTC
+======================================================================
+
+
+[STEP 03] Planning Agent done
+         Indian Political Economy and Nationalism (Intermediate)
+         2026-03-04 09:08:31 UTC
+
+[STEP 06] Search: M1.S1
+         10 results
+         2026-03-04 09:08:35 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-04 09:08:35 UTC
+
+[STEP 08] Context built
+         260 words
+         2026-03-04 09:08:37 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-04 09:08:43 UTC
+
+[STEP 10] Written: World War I and its Impact on Indian Nationalism
+         6 slides
+         2026-03-04 09:08:59 UTC
+
+[STEP 11] Stored M1.S1
+         None
+         2026-03-04 09:08:59 UTC
+
+[STEP 12] Submodule loop
+         3 remaining
+         2026-03-04 09:08:59 UTC
+
+[STEP 06] Search: M1.S2
+         10 results
+         2026-03-04 09:09:02 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-04 09:09:02 UTC
+
+[STEP 08] Context built
+         258 words
+         2026-03-04 09:09:04 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-04 09:09:11 UTC
+
+[STEP 10] Written: The Non‑Cooperation Movement
+         5 slides
+         2026-03-04 09:09:16 UTC
+
+[STEP 11] Stored M1.S2
+         None
+         2026-03-04 09:09:16 UTC
+
+[STEP 12] Submodule loop
+         2 remaining
+         2026-03-04 09:09:16 UTC
+
+[STEP 06] Search: M1.S3
+         10 results
+         2026-03-04 09:09:20 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-04 09:09:20 UTC
+
+[STEP 08] Context built
+         266 words
+         2026-03-04 09:09:27 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-04 09:09:31 UTC
+
+[STEP 10] Written: The Civil Disobedience Movement
+         6 slides
+         2026-03-04 09:09:36 UTC
+
+[STEP 11] Stored M1.S3
+         None
+         2026-03-04 09:09:36 UTC
+
+[STEP 12] Submodule loop
+         1 remaining
+         2026-03-04 09:09:36 UTC
+
+[STEP 06] Search: M1.S4
+         10 results
+         2026-03-04 09:09:39 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-04 09:09:39 UTC
+
+[STEP 08] Context built
+         220 words
+         2026-03-04 09:09:51 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-04 09:09:56 UTC
+
+[STEP 10] Written: Mahatma Gandhi’s Leadership and Ideology
+         6 slides
+         2026-03-04 09:10:00 UTC
+
+[STEP 11] Stored M1.S4
+         None
+         2026-03-04 09:10:00 UTC
+
+[STEP 12] Submodule loop
+         0 remaining
+         2026-03-04 09:10:00 UTC
+
+[STEP 13] Refs for 'Nationalism and Independence Movements in India'
+         8 refs
+         2026-03-04 09:10:00 UTC
+
+[STEP 14] Videos for 'Nationalism and Independence Movements in India'
+         3 found
+         2026-03-04 09:10:02 UTC
+
+[STEP 06] Search: M2.S1
+         10 results
+         2026-03-04 09:10:06 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-04 09:10:06 UTC
+
+[STEP 08] Context built
+         285 words
+         2026-03-04 09:10:15 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-04 09:10:22 UTC
+
+[STEP 10] Written: Classification of Natural Resources
+         5 slides
+         2026-03-04 09:10:28 UTC
+
+[STEP 11] Stored M2.S1
+         None
+         2026-03-04 09:10:28 UTC
+
+[STEP 12] Submodule loop
+         2 remaining
+         2026-03-04 09:10:28 UTC
+
+[STEP 06] Search: M2.S2
+         10 results
+         2026-03-04 09:10:32 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-04 09:10:32 UTC
+
+[STEP 08] Context built
+         263 words
+         2026-03-04 09:11:19 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-04 09:11:23 UTC
+
+[STEP 10] Written: Resource Planning Frameworks in India
+         6 slides
+         2026-03-04 09:11:29 UTC
+
+[STEP 11] Stored M2.S2
+         None
+         2026-03-04 09:11:29 UTC
+
+[STEP 12] Submodule loop
+         1 remaining
+         2026-03-04 09:11:29 UTC
+
+[STEP 06] Search: M2.S3
+         10 results
+         2026-03-04 09:11:34 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-04 09:11:34 UTC
+
+[STEP 08] Context built
+         260 words
+         2026-03-04 09:11:46 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-04 09:11:50 UTC
+
+[STEP 10] Written: Land Resources and Patterns of Use
+         7 slides
+         2026-03-04 09:11:57 UTC
+
+[STEP 11] Stored M2.S3
+         None
+         2026-03-04 09:11:57 UTC
+
+[STEP 12] Submodule loop
+         0 remaining
+         2026-03-04 09:11:57 UTC
+
+[STEP 13] Refs for 'Resources, Land, and Environmental Management in India'
+         8 refs
+         2026-03-04 09:11:57 UTC
+
+[STEP 14] Videos for 'Resources, Land, and Environmental Management in India'
+         3 found
+         2026-03-04 09:11:58 UTC
+
+[STEP 06] Search: M3.S1
+         10 results
+         2026-03-04 09:12:03 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-04 09:12:03 UTC
+
+[STEP 08] Context built
+         234 words
+         2026-03-04 09:12:57 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-04 09:13:01 UTC
+
+[STEP 10] Written: Rationale for Power Sharing: Prudential and Moral Dimensions
+         7 slides
+         2026-03-04 09:13:07 UTC
+
+[STEP 11] Stored M3.S1
+         None
+         2026-03-04 09:13:07 UTC
+
+[STEP 12] Submodule loop
+         1 remaining
+         2026-03-04 09:13:07 UTC
+
+[STEP 06] Search: M3.S2
+         10 results
+         2026-03-04 09:13:10 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-04 09:13:10 UTC
+
+[STEP 08] Context built
+         255 words
+         2026-03-04 09:13:13 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-04 09:13:17 UTC
+
+[STEP 10] Written: Forms of Power Sharing in Diverse Polities
+         6 slides
+         2026-03-04 09:13:25 UTC
+
+[STEP 11] Stored M3.S2
+         None
+         2026-03-04 09:13:25 UTC
+
+[STEP 12] Submodule loop
+         0 remaining
+         2026-03-04 09:13:25 UTC
+
+[STEP 13] Refs for 'Power Sharing and Governance: Comparative Perspectives'
+         8 refs
+         2026-03-04 09:13:25 UTC
+
+[STEP 14] Videos for 'Power Sharing and Governance: Comparative Perspectives'
+         3 found
+         2026-03-04 09:13:26 UTC
+
+[STEP 06] Search: M4.S1
+         10 results
+         2026-03-04 09:13:32 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-04 09:13:32 UTC
+
+[STEP 08] Context built
+         198 words
+         2026-03-04 09:13:35 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-04 09:13:39 UTC
+
+[STEP 10] Written: Primary, Secondary, and Tertiary Sectors: Definitions and Roles
+         5 slides
+         2026-03-04 09:14:10 UTC
+
+[STEP 11] Stored M4.S1
+         None
+         2026-03-04 09:14:10 UTC
+
+[STEP 12] Submodule loop
+         3 remaining
+         2026-03-04 09:14:10 UTC
+
+[STEP 06] Search: M4.S2
+         10 results
+         2026-03-04 09:14:14 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-04 09:14:14 UTC
+
+[STEP 08] Context built
+         269 words
+         2026-03-04 09:14:16 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-04 09:14:20 UTC
+
+[STEP 10] Written: Comparative Analysis of Economic Sectors
+         5 slides
+         2026-03-04 09:14:39 UTC
+
+[STEP 11] Stored M4.S2
+         None
+         2026-03-04 09:14:39 UTC
+
+[STEP 12] Submodule loop
+         2 remaining
+         2026-03-04 09:14:39 UTC
+
+[STEP 06] Search: M4.S3
+         10 results
+         2026-03-04 09:14:43 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-04 09:14:43 UTC
+
+[STEP 08] Context built
+         218 words
+         2026-03-04 09:14:46 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-04 09:14:54 UTC
+
+[STEP 10] Written: Organized vs. Unorganized Sectors
+         5 slides
+         2026-03-04 09:15:09 UTC
+
+[STEP 11] Stored M4.S3
+         None
+         2026-03-04 09:15:09 UTC
+
+[STEP 12] Submodule loop
+         1 remaining
+         2026-03-04 09:15:09 UTC
+
+[STEP 06] Search: M4.S4
+         10 results
+         2026-03-04 09:15:13 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-04 09:15:13 UTC
+
+[STEP 08] Context built
+         266 words
+         2026-03-04 09:15:16 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-04 09:15:20 UTC
+
+[STEP 10] Written: Public and Private Sector Interplay
+         6 slides
+         2026-03-04 09:16:25 UTC
+
+[STEP 11] Stored M4.S4
+         None
+         2026-03-04 09:16:26 UTC
+
+[STEP 12] Submodule loop
+         0 remaining
+         2026-03-04 09:16:26 UTC
+
+[STEP 13] Refs for 'Structure and Dynamics of the Indian Economy'
+         8 refs
+         2026-03-04 09:16:26 UTC
+
+[STEP 14] Videos for 'Structure and Dynamics of the Indian Economy'
+         3 found
+         2026-03-04 09:16:27 UTC
+
+======================================================================
+  COMPLETE  2026-03-04 09:16:27 UTC
+  Modules   : 4
+  Submodules: 13
+  Slides    : 75
+  References: 32
+  Videos    : 12
+  Backend   : None
+======================================================================
+

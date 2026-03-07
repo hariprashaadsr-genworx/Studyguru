@@ -188,6 +188,8 @@ async def preprocessor(state: CourseState, config: RunnableConfig) -> CourseStat
     state["cand_images"] = []
     state["cur_images"] = []
     state["subject_domain"] = ""
+    state["subject_type"] = ""
+    state["education_level"] = ""
 
     total_subs = sum(len(m["submodules"]) for m in normalised)
 
@@ -240,21 +242,31 @@ async def planning_agent(state: CourseState, config: RunnableConfig) -> CourseSt
         user=prompt,
     )
 
-    clean = repair_json(raw)
+    stripped = await _strip_json(raw)
+    clean = repair_json(stripped)
     data = json.loads(clean)
 
-    data = json.loads(await _strip_json(raw))
-
-    # Persist subject domain
+    # Persist subject domain and subject type
     state["subject_domain"] = data.get(
         "subject_domain",
         state["course_title"]
+    )
+    state["subject_type"] = data.get(
+        "subject_type",
+        ""
     )
 
     await _log(
         state,
         f"  → Subject domain: {state['subject_domain']}"
     )
+    await _log(
+        state,
+        f"  → Subject type: {state['subject_type']}"
+    )
+
+    # Store education_level from planner
+    state["education_level"] = data.get("education_level", "")
 
     plan_by = {
         m["module_id"]: m
@@ -287,16 +299,27 @@ async def planning_agent(state: CourseState, config: RunnableConfig) -> CourseSt
             sub["needs_analogy"] = bool(
                 ps.get("needs_analogy", False)
             )
+            sub["needs_derivation"] = bool(
+                ps.get("needs_derivation", False)
+            )
+            sub["needs_formula"] = bool(
+                ps.get("needs_formula", False)
+            )
+            sub["topic_depth"] = ps.get("topic_depth", "medium")
+            sub["planned_slide_count"] = ps.get(
+                "planned_slide_count", 5
+            )
             sub["image_search_query"] = ps.get(
                 "image_search_query",
                 f"{sub['title']} diagram"
             )
+            # Dynamic sections from planner — never static fallback
             sub["sections"] = ps.get("sections", [
                 f"Introduction: {sub['title']}",
-                "Core Concepts",
-                "Step-by-Step Breakdown",
-                f"Worked Example: {sub['title']}",
-                "Check Your Understanding",
+                f"Key Concepts: {sub['title']}",
+                f"Detailed Explanation: {sub['title']}",
+                f"Examples and Applications: {sub['title']}",
+                f"Summary & Questions to Ponder",
             ])
 
     total = sum(len(m["submodules"]) for m in state["modules"])
@@ -737,9 +760,15 @@ async def content_writer(state: CourseState, config: RunnableConfig) -> CourseSt
         for img in state.get("cur_images", [])
     ]
 
+    # Get subject_type from state (set by planner)
+    subject_type = state.get("subject_type", "")
+    education_level = state.get("education_level", "")
+
     prompt = P.content_writer_prompt(
         course_title=state["course_title"],
         subject_domain=state["subject_domain"],
+        subject_type=subject_type,
+        education_level=education_level,
         mod_title=mod["title"],
         mod_plan=mod["module_plan"],
         sub_title=sub["title"],
@@ -750,13 +779,18 @@ async def content_writer(state: CourseState, config: RunnableConfig) -> CourseSt
         context=state["clean_context"],
         images=img_blocks,
         covered_str=covered_str,
+        needs_derivation=sub.get("needs_derivation", False),
+        needs_formula=sub.get("needs_formula", False),
+        topic_depth=sub.get("topic_depth", "medium"),
     )
 
     content = await _llm(
         system=(
             f"Expert educational content writer for {prof['label']} level. "
-            f"Subject: {state['subject_domain']}. Clean markdown. "
-            "LaTeX for math only if level >= 3."
+            f"Subject domain: {state['subject_domain']}. Subject type: {subject_type}. "
+            f"Education level: {education_level}. "
+            f"Generate clean markdown with ---SLIDE--- separators. "
+            f"{'LaTeX for math.' if state['skill_level'] >= 3 else 'No LaTeX.'}"
         ),
         user=prompt,
     )
@@ -1049,6 +1083,8 @@ async def compile_course(state: CourseState, config: RunnableConfig) -> CourseSt
         "course_id":        state["course_id"],
         "course_title":     state["course_title"],
         "subject_domain":   state["subject_domain"],
+        "subject_type":     state.get("subject_type", ""),
+        "education_level":  state.get("education_level", ""),
         "skill_level":      sk,
         "skill_label":      prof["label"],
         "total_modules":    len(state["modules"]),

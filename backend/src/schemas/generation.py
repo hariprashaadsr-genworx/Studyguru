@@ -7,6 +7,8 @@ class CourseState(TypedDict):
     course_title:  str
     skill_level:   int
     subject_domain: str
+    subject_type:  str
+    education_level: str
     modules:       List[dict]
 
     cur_mod_idx:   int

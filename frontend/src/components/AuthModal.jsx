@@ -22,7 +22,7 @@ const Field = ({ label, type = 'text', value, onChange, placeholder, autoComplet
 export default function AuthModal() {
   const dispatch  = useDispatch()
   const navigate  = useNavigate()
-  const { authModal, status, error, isAuthenticated } = useSelector((s) => s.auth)
+  const { authModal, status, error, isAuthenticated, role } = useSelector((s) => s.auth)
   const isLogin   = authModal === 'login'
 
   const [name,     setName]     = useState('')
@@ -38,9 +38,9 @@ export default function AuthModal() {
   useEffect(() => {
     if (isAuthenticated && authModal === null) {
       dispatch(toast(isLogin ? 'Welcome back! 👋' : 'Account created! 🎉'))
-      navigate('/dashboard')
+      navigate(role === 'admin' ? '/dashboard' : '/student')
     }
-  }, [isAuthenticated, authModal]) // eslint-disable-line
+  }, [isAuthenticated, authModal, role]) // eslint-disable-line
 
   if (!authModal) return null
 

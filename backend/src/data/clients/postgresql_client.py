@@ -29,8 +29,25 @@ async def init_db() -> None:
     """
     Called at FastAPI startup
     """
+    # Import all models so Base.metadata picks them up
+    import src.data.models.postgres.course       # noqa: F401
+    import src.data.models.postgres.submodules    # noqa: F401
+    import src.data.models.postgres.custom_course # noqa: F401
+    import src.data.models.postgres.enrollment    # noqa: F401
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Lightweight migration: add enrollment_id column if missing
+        await conn.execute(
+            __import__("sqlalchemy").text(
+                "ALTER TABLE questions ADD COLUMN IF NOT EXISTS enrollment_id VARCHAR;"
+            )
+        )
+        await conn.execute(
+            __import__("sqlalchemy").text(
+                "CREATE INDEX IF NOT EXISTS ix_questions_enrollment_id ON questions (enrollment_id);"
+            )
+        )
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:

@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from src.api.rest.routes.base_generation_router import router
+from src.api.rest.routes.student_router import router as student_router
 from fastapi import FastAPI
 from src.data.clients.postgresql_client import init_db
 
@@ -25,6 +26,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"],
 
 
 app.include_router(router)
+app.include_router(student_router)
 
 
 @app.get("/", response_class=HTMLResponse)

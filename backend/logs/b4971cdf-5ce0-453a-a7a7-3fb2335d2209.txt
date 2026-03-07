@@ -1,0 +1,504 @@
+======================================================================
+  COURSE ENGINE — GENERATION LOG
+  Job     : b4971cdf-5ce0-453a-a7a7-3fb2335d2209
+  Course  : Force and Pressure: Principles and Applications
+  Level   : Standard
+  Modules : 4
+  Started : 2026-03-05 05:01:48 UTC
+======================================================================
+
+
+[STEP 03] Planning Agent done
+         Class 11–12 Physics
+         2026-03-05 05:01:58 UTC
+
+[STEP 06] Search: M1.S1
+         10 results
+         2026-03-05 05:02:03 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-05 05:02:03 UTC
+
+[STEP 08] Context built
+         262 words
+         2026-03-05 05:02:05 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-05 05:02:12 UTC
+
+[STEP 10] Written: Definition and Significance of Force
+         6 slides
+         2026-03-05 05:02:20 UTC
+
+[STEP 11] Stored M1.S1
+         None
+         2026-03-05 05:02:20 UTC
+
+[STEP 12] Submodule loop
+         3 remaining
+         2026-03-05 05:02:20 UTC
+
+[STEP 06] Search: M1.S2
+         10 results
+         2026-03-05 05:02:24 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-05 05:02:24 UTC
+
+[STEP 08] Context built
+         322 words
+         2026-03-05 05:02:27 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-05 05:02:32 UTC
+
+[STEP 10] Written: Classification of Forces
+         5 slides
+         2026-03-05 05:02:40 UTC
+
+[STEP 11] Stored M1.S2
+         None
+         2026-03-05 05:02:40 UTC
+
+[STEP 12] Submodule loop
+         2 remaining
+         2026-03-05 05:02:40 UTC
+
+[STEP 06] Search: M1.S3
+         10 results
+         2026-03-05 05:02:44 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-05 05:02:44 UTC
+
+[STEP 08] Context built
+         255 words
+         2026-03-05 05:02:46 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-05 05:02:50 UTC
+
+[STEP 10] Written: Contact Forces
+         7 slides
+         2026-03-05 05:02:58 UTC
+
+[STEP 11] Stored M1.S3
+         None
+         2026-03-05 05:02:58 UTC
+
+[STEP 12] Submodule loop
+         1 remaining
+         2026-03-05 05:02:58 UTC
+
+[STEP 06] Search: M1.S4
+         10 results
+         2026-03-05 05:03:02 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-05 05:03:02 UTC
+
+[STEP 08] Context built
+         268 words
+         2026-03-05 05:03:04 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-05 05:03:11 UTC
+
+[STEP 10] Written: Non‑Contact Forces
+         7 slides
+         2026-03-05 05:03:21 UTC
+
+[STEP 11] Stored M1.S4
+         None
+         2026-03-05 05:03:21 UTC
+
+[STEP 12] Submodule loop
+         0 remaining
+         2026-03-05 05:03:21 UTC
+
+[STEP 13] Refs for 'Foundations of Force'
+         8 refs
+         2026-03-05 05:03:21 UTC
+
+[STEP 14] Videos for 'Foundations of Force'
+         3 found
+         2026-03-05 05:03:23 UTC
+
+[STEP 06] Search: M2.S1
+         10 results
+         2026-03-05 05:03:27 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-05 05:03:27 UTC
+
+[STEP 08] Context built
+         255 words
+         2026-03-05 05:03:30 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-05 05:03:35 UTC
+
+[STEP 10] Written: Vector Representation of Forces
+         6 slides
+         2026-03-05 05:04:24 UTC
+
+[STEP 11] Stored M2.S1
+         None
+         2026-03-05 05:04:24 UTC
+
+[STEP 12] Submodule loop
+         3 remaining
+         2026-03-05 05:04:24 UTC
+
+[STEP 06] Search: M2.S2
+         10 results
+         2026-03-05 05:04:28 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-05 05:04:28 UTC
+
+[STEP 08] Context built
+         244 words
+         2026-03-05 05:04:30 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-05 05:04:35 UTC
+
+[STEP 10] Written: Resultant Force and Net Effect
+         6 slides
+         2026-03-05 05:04:44 UTC
+
+[STEP 11] Stored M2.S2
+         None
+         2026-03-05 05:04:44 UTC
+
+[STEP 12] Submodule loop
+         2 remaining
+         2026-03-05 05:04:44 UTC
+
+[STEP 06] Search: M2.S3
+         10 results
+         2026-03-05 05:04:48 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-05 05:04:48 UTC
+
+[STEP 08] Context built
+         298 words
+         2026-03-05 05:04:50 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-05 05:04:55 UTC
+
+[STEP 10] Written: Equilibrium Conditions
+         5 slides
+         2026-03-05 05:05:02 UTC
+
+[STEP 11] Stored M2.S3
+         None
+         2026-03-05 05:05:02 UTC
+
+[STEP 12] Submodule loop
+         1 remaining
+         2026-03-05 05:05:02 UTC
+
+[STEP 06] Search: M2.S4
+         10 results
+         2026-03-05 05:05:06 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-05 05:05:06 UTC
+
+[STEP 08] Context built
+         279 words
+         2026-03-05 05:05:08 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-05 05:05:13 UTC
+
+[STEP 10] Written: Dynamic Force Scenarios
+         6 slides
+         2026-03-05 05:05:21 UTC
+
+[STEP 11] Stored M2.S4
+         None
+         2026-03-05 05:05:21 UTC
+
+[STEP 12] Submodule loop
+         0 remaining
+         2026-03-05 05:05:21 UTC
+
+[STEP 13] Refs for 'Force Analysis and Interaction'
+         8 refs
+         2026-03-05 05:05:21 UTC
+
+[STEP 14] Videos for 'Force Analysis and Interaction'
+         3 found
+         2026-03-05 05:05:23 UTC
+
+[STEP 06] Search: M3.S1
+         10 results
+         2026-03-05 05:05:27 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-05 05:05:27 UTC
+
+[STEP 08] Context built
+         259 words
+         2026-03-05 05:05:30 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-05 05:05:36 UTC
+
+[STEP 10] Written: Definition and Units of Pressure
+         5 slides
+         2026-03-05 05:05:42 UTC
+
+[STEP 11] Stored M3.S1
+         None
+         2026-03-05 05:05:43 UTC
+
+[STEP 12] Submodule loop
+         3 remaining
+         2026-03-05 05:05:43 UTC
+
+[STEP 06] Search: M3.S2
+         10 results
+         2026-03-05 05:05:47 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-05 05:05:47 UTC
+
+[STEP 08] Context built
+         324 words
+         2026-03-05 05:05:50 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-05 05:05:54 UTC
+
+[STEP 10] Written: Pressure in Liquids
+         5 slides
+         2026-03-05 05:06:02 UTC
+
+[STEP 11] Stored M3.S2
+         None
+         2026-03-05 05:06:02 UTC
+
+[STEP 12] Submodule loop
+         2 remaining
+         2026-03-05 05:06:02 UTC
+
+[STEP 06] Search: M3.S3
+         10 results
+         2026-03-05 05:06:06 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-05 05:06:06 UTC
+
+[STEP 08] Context built
+         290 words
+         2026-03-05 05:06:09 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-05 05:06:14 UTC
+
+[STEP 10] Written: Atmospheric Pressure
+         5 slides
+         2026-03-05 05:06:22 UTC
+
+[STEP 11] Stored M3.S3
+         None
+         2026-03-05 05:06:22 UTC
+
+[STEP 12] Submodule loop
+         1 remaining
+         2026-03-05 05:06:22 UTC
+
+[STEP 06] Search: M3.S4
+         10 results
+         2026-03-05 05:06:27 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-05 05:06:27 UTC
+
+[STEP 08] Context built
+         273 words
+         2026-03-05 05:06:29 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-05 05:06:35 UTC
+
+[STEP 10] Written: Hydrostatic and Aerostatic Concepts
+         5 slides
+         2026-03-05 05:06:46 UTC
+
+[STEP 11] Stored M3.S4
+         None
+         2026-03-05 05:06:46 UTC
+
+[STEP 12] Submodule loop
+         0 remaining
+         2026-03-05 05:06:46 UTC
+
+[STEP 13] Refs for 'Fundamentals of Pressure'
+         8 refs
+         2026-03-05 05:06:46 UTC
+
+[STEP 14] Videos for 'Fundamentals of Pressure'
+         3 found
+         2026-03-05 05:06:48 UTC
+
+[STEP 06] Search: M4.S1
+         10 results
+         2026-03-05 05:06:52 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-05 05:06:52 UTC
+
+[STEP 08] Context built
+         262 words
+         2026-03-05 05:06:55 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-05 05:07:00 UTC
+
+[STEP 10] Written: Pressure in Everyday Devices
+         5 slides
+         2026-03-05 05:07:07 UTC
+
+[STEP 11] Stored M4.S1
+         None
+         2026-03-05 05:07:07 UTC
+
+[STEP 12] Submodule loop
+         3 remaining
+         2026-03-05 05:07:07 UTC
+
+[STEP 06] Search: M4.S2
+         10 results
+         2026-03-05 05:07:11 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-05 05:07:11 UTC
+
+[STEP 08] Context built
+         245 words
+         2026-03-05 05:07:14 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-05 05:07:19 UTC
+
+[STEP 10] Written: Force Utilization in Mechanical Systems
+         5 slides
+         2026-03-05 05:07:27 UTC
+
+[STEP 11] Stored M4.S2
+         None
+         2026-03-05 05:07:27 UTC
+
+[STEP 12] Submodule loop
+         2 remaining
+         2026-03-05 05:07:27 UTC
+
+[STEP 06] Search: M4.S3
+         10 results
+         2026-03-05 05:07:31 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-05 05:07:31 UTC
+
+[STEP 08] Context built
+         226 words
+         2026-03-05 05:07:34 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-05 05:07:40 UTC
+
+[STEP 10] Written: Safety and Design Considerations
+         5 slides
+         2026-03-05 05:07:49 UTC
+
+[STEP 11] Stored M4.S3
+         None
+         2026-03-05 05:07:49 UTC
+
+[STEP 12] Submodule loop
+         1 remaining
+         2026-03-05 05:07:49 UTC
+
+[STEP 06] Search: M4.S4
+         10 results
+         2026-03-05 05:07:54 UTC
+
+[STEP 07] Refs evaluated
+         4 selected
+         2026-03-05 05:07:54 UTC
+
+[STEP 08] Context built
+         240 words
+         2026-03-05 05:07:57 UTC
+
+[STEP 09] Images validated
+         2 approved
+         2026-03-05 05:08:02 UTC
+
+[STEP 10] Written: Integrative Case Study
+         5 slides
+         2026-03-05 05:08:11 UTC
+
+[STEP 11] Stored M4.S4
+         None
+         2026-03-05 05:08:11 UTC
+
+[STEP 12] Submodule loop
+         0 remaining
+         2026-03-05 05:08:11 UTC
+
+[STEP 13] Refs for 'Applications of Force and Pressure'
+         8 refs
+         2026-03-05 05:08:11 UTC
+
+[STEP 14] Videos for 'Applications of Force and Pressure'
+         3 found
+         2026-03-05 05:08:13 UTC
+
+======================================================================
+  COMPLETE  2026-03-05 05:08:13 UTC
+  Modules   : 4
+  Submodules: 16
+  Slides    : 88
+  References: 32
+  Videos    : 12
+  Backend   : None
+======================================================================
+
