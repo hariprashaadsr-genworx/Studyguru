@@ -45,11 +45,13 @@ class TestSubmitRequest(BaseModel):
     module_id: str
     score: int
     total: int
+    answers: dict = {}  # {"0": "selected_option", "1": "selected_option", ...}
 
 
 class FinalTestSubmitRequest(BaseModel):
     score: int
     total: int
+    answers: dict = {}  # {"0": "selected_option", ...}
 
 
 # ── Browse all base courses ──────────────────────────────────────────────────
@@ -124,13 +126,13 @@ async def final_questions(enrollment_id: str, db: AsyncSession = Depends(get_db)
 @router.post("/enrollment/{enrollment_id}/submit-module-test")
 async def submit_module_test(enrollment_id: str, req: TestSubmitRequest, db: AsyncSession = Depends(get_db)):
     """Submit module test results."""
-    return await student_svc.submit_module_test_service(enrollment_id, req.module_id, req.score, req.total, db)
+    return await student_svc.submit_module_test_service(enrollment_id, req.module_id, req.score, req.total, req.answers, db)
 
 
 @router.post("/enrollment/{enrollment_id}/submit-final-test")
 async def submit_final_test(enrollment_id: str, req: FinalTestSubmitRequest, db: AsyncSession = Depends(get_db)):
     """Submit final assessment results."""
-    return await student_svc.submit_final_test_service(enrollment_id, req.score, req.total, db)
+    return await student_svc.submit_final_test_service(enrollment_id, req.score, req.total, req.answers, db)
 
 
 @router.post("/enrollment/{enrollment_id}/complete")

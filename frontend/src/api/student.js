@@ -111,20 +111,20 @@ export async function fetchFinalQuestions(enrollmentId) {
 }
 
 /** Submit module test results */
-export async function submitModuleTest(enrollmentId, moduleId, score, total) {
+export async function submitModuleTest(enrollmentId, moduleId, score, total, answers = {}) {
   const res = await apiFetch(`/api/student/enrollment/${enrollmentId}/submit-module-test`, {
     method: 'POST',
-    body: JSON.stringify({ module_id: moduleId, score, total }),
+    body: JSON.stringify({ module_id: moduleId, score, total, answers }),
   })
   const data = await res.json().catch(() => ({}))
   return data
 }
 
 /** Submit final test results */
-export async function submitFinalTest(enrollmentId, score, total) {
+export async function submitFinalTest(enrollmentId, score, total, answers = {}) {
   const res = await apiFetch(`/api/student/enrollment/${enrollmentId}/submit-final-test`, {
     method: 'POST',
-    body: JSON.stringify({ score, total }),
+    body: JSON.stringify({ score, total, answers }),
   })
   const data = await res.json().catch(() => ({}))
   return data

@@ -28,6 +28,7 @@ class Question(Base):
 
     question_id = Column(Integer, primary_key=True, autoincrement=True)
     course_id = Column(String, nullable=False, index=True)
+    enrollment_id = Column(String, nullable=True, index=True)  # per-user questions; null = legacy shared
     module_id = Column(String, nullable=True, index=True)  # null for final assessment
     question_type = Column(String, nullable=False)  # "mcq" | "true_false"
     question_text = Column(Text, nullable=False)

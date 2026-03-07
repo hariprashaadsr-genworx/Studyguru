@@ -16,7 +16,7 @@ export default function GeneratingView() {
 
   useEffect(() => {
     if (status === 'done' && completedCourseId) {
-      const t = setTimeout(() => navigate(`/course/${completedCourseId}`), 1400)
+      const t = setTimeout(() => navigate(`/course/${completedCourseId}`, { replace: true }), 1400)
       return () => clearTimeout(t)
     }
   }, [status, completedCourseId, navigate])

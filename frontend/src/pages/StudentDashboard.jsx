@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -13,6 +13,7 @@ import {
 } from '../store/studentSlice'
 import { logout } from '../store/authSlice'
 import { toast } from '../store/uiSlice'
+import { fetchEnrollment } from '../api/student'
 
 // ── Level badge ─────────────────────────────────────────────────────────────
 const LEVEL_BADGE = {
@@ -251,6 +252,11 @@ function ModuleSelector() {
   const { structure, structureStatus, selectedModules } = useSelector((s) => s.student)
   const { user } = useSelector((s) => s.auth)
   const [enrolling, setEnrolling] = useState(false)
+  const [preparing, setPreparing] = useState(null) // { enrollment_id, already_enrolled } or null
+  const pollRef = useRef(null)
+
+  // Clean up poll on unmount
+  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
 
   if (structureStatus === 'loading') {
     return (
@@ -287,12 +293,44 @@ function ModuleSelector() {
         selectedModules: selMods,
       })).unwrap()
 
-      // Navigate to the enrollment viewer
-      navigate(`/student/view/${result.enrollment_id}`)
+      // If already enrolled, navigate directly
+      if (result.already_enrolled) {
+        navigate(`/student/view/${result.enrollment_id}`, { replace: true })
+        return
+      }
+
+      // Show preparing screen and poll until questions are ready
+      setPreparing(result)
+      setEnrolling(false)
+
+      pollRef.current = setInterval(async () => {
+        try {
+          const fresh = await fetchEnrollment(result.enrollment_id)
+          const p = fresh?.progress || {}
+          if (p.questions_ready) {
+            if (pollRef.current) clearInterval(pollRef.current)
+            navigate(`/student/view/${result.enrollment_id}`, { replace: true })
+          }
+        } catch (e) { console.warn('Poll failed:', e) }
+      }, 3000)
     } catch (e) {
       dispatch(toast(e.message || 'Enrollment failed'))
       setEnrolling(false)
     }
+  }
+
+  // ── Preparing screen: questions are being generated ────
+  if (preparing) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <div className="w-14 h-14 border-[3px] border-navy-600 border-t-accent rounded-full animate-spin-slow mb-6" />
+        <h2 className="font-display text-[22px] font-bold text-white mb-2">Your course is being prepared</h2>
+        <p className="text-navy-300 text-[14px] max-w-md mb-1">
+          We're generating personalised quiz questions for each module. This usually takes a moment…
+        </p>
+        <p className="text-navy-500 text-[12px] mt-4">Please don't close this page.</p>
+      </div>
+    )
   }
 
   return (

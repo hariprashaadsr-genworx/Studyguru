@@ -136,16 +136,20 @@ async def get_questions_for_module(
     db: AsyncSession,
     course_id: str,
     module_id: str,
+    enrollment_id: str = None,
 ) -> List[dict]:
-    """Get questions for a specific module."""
+    """Get questions for a specific module. If enrollment_id given, get per-user questions."""
+    conditions = [
+        Question.course_id == course_id,
+        Question.module_id == module_id,
+        Question.is_final == False,
+    ]
+    if enrollment_id:
+        conditions.append(Question.enrollment_id == enrollment_id)
+    else:
+        conditions.append(Question.enrollment_id == None)
     result = await db.execute(
-        select(Question).where(
-            and_(
-                Question.course_id == course_id,
-                Question.module_id == module_id,
-                Question.is_final == False,
-            )
-        )
+        select(Question).where(and_(*conditions))
     )
     rows = result.scalars().all()
     return [
@@ -164,15 +168,19 @@ async def get_questions_for_module(
 async def get_final_questions(
     db: AsyncSession,
     course_id: str,
+    enrollment_id: str = None,
 ) -> List[dict]:
-    """Get final assessment questions for a course."""
+    """Get final assessment questions for a course. If enrollment_id given, get per-user questions."""
+    conditions = [
+        Question.course_id == course_id,
+        Question.is_final == True,
+    ]
+    if enrollment_id:
+        conditions.append(Question.enrollment_id == enrollment_id)
+    else:
+        conditions.append(Question.enrollment_id == None)
     result = await db.execute(
-        select(Question).where(
-            and_(
-                Question.course_id == course_id,
-                Question.is_final == True,
-            )
-        )
+        select(Question).where(and_(*conditions))
     )
     rows = result.scalars().all()
     return [
@@ -197,6 +205,7 @@ async def save_questions(
         for q in questions:
             db.add(Question(
                 course_id=q["course_id"],
+                enrollment_id=q.get("enrollment_id"),
                 module_id=q.get("module_id"),
                 question_type=q["question_type"],
                 question_text=q["question_text"],

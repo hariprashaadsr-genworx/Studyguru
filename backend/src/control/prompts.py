@@ -482,6 +482,10 @@ Generate exactly 5 assessment questions for this module. Use a MIX of:
 
 Aim for roughly 3 MCQs and 2 True/False, but adjust based on content.
 
+DIFFICULTY:
+  - 4 questions must be EASY (straightforward recall or simple application)
+  - 1 question must be HARD (requires deeper analysis or synthesis)
+
 For EACH question, provide exactly 3 progressive hints:
   - Hint 1: A gentle nudge in the right direction (vague)
   - Hint 2: A more specific clue that narrows down the answer
@@ -494,6 +498,7 @@ RULES:
 - Correct answer for MCQ must be the option text (e.g., "Photosynthesis")
 - Correct answer for True/False must be exactly "True" or "False"
 - Hints should progressively guide the student to the correct answer
+- Include a "difficulty" field for each question: "easy" or "hard"
 
 RETURN STRICT JSON ONLY — no markdown fences, no commentary:
 [
@@ -502,18 +507,20 @@ RETURN STRICT JSON ONLY — no markdown fences, no commentary:
     "question_text": "What is ...?",
     "options": ["Option A", "Option B", "Option C", "Option D"],
     "correct_answer": "Option B",
-    "hints": ["Hint 1...", "Hint 2...", "Hint 3..."]
+    "hints": ["Hint 1...", "Hint 2...", "Hint 3..."],
+    "difficulty": "easy"
   }},
   {{
     "question_type": "true_false",
     "question_text": "Statement to evaluate",
     "options": ["True", "False"],
     "correct_answer": "True",
-    "hints": ["Hint 1...", "Hint 2...", "Hint 3..."]
+    "hints": ["Hint 1...", "Hint 2...", "Hint 3..."],
+    "difficulty": "hard"
   }}
 ]
 
-Generate exactly 5 questions now.
+Generate exactly 5 questions now (4 easy, 1 hard).
 """
 
 
@@ -545,6 +552,10 @@ Use a MIX of:
 
 Aim for roughly 10 MCQs and 5 True/False, but adjust based on content.
 
+DIFFICULTY:
+  - 3-4 questions should be EASY (straightforward recall or simple application)
+  - Remaining questions should be MEDIUM to HARD (analysis, synthesis, cross-module reasoning)
+
 For EACH question, provide exactly 3 progressive hints:
   - Hint 1: A gentle nudge in the right direction (vague)
   - Hint 2: A more specific clue that narrows down the answer
@@ -558,6 +569,7 @@ RULES:
 - Correct answer for True/False must be exactly "True" or "False"
 - Include at least 1 question per module
 - Some questions should test cross-module understanding
+- Include a "difficulty" field for each question: "easy", "medium", or "hard"
 
 RETURN STRICT JSON ONLY — no markdown fences, no commentary:
 [
@@ -573,9 +585,10 @@ RETURN STRICT JSON ONLY — no markdown fences, no commentary:
     "question_text": "Statement to evaluate",
     "options": ["True", "False"],
     "correct_answer": "False",
-    "hints": ["Hint 1...", "Hint 2...", "Hint 3..."]
+    "hints": ["Hint 1...", "Hint 2...", "Hint 3..."],
+    "difficulty": "medium"
   }}
 ]
 
-Generate exactly 15 questions now.
+Generate exactly 15 questions now (3-4 easy, rest medium to hard).
 """

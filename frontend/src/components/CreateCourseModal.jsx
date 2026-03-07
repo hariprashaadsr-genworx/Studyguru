@@ -270,7 +270,7 @@ export default function CreateCourseModal() {
     if (!builtMods.length) { dispatch(toast('Add at least one module with lessons.')); return }
     dispatch(closeModal())
     dispatch(beginGeneration({ course_title: title.trim(), skill_level: level, modules: builtMods }))
-    navigate('/generating')
+    navigate('/generating', { replace: true })
   }
 
   const HEADERS = [

@@ -9,6 +9,7 @@ import {
   submitModuleTest,
   submitFinalTest,
   completeCourse,
+  fetchEnrollment,
 } from '../api/student'
 import { marked } from 'marked'
 
@@ -62,7 +63,6 @@ function buildFlatNav(modules = []) {
 
 function isModuleUnlocked(mi, modulesPassed) {
   if (mi === 0) return true
-  // Module i is unlocked if module i-1 test is passed
   return modulesPassed.includes(mi - 1)
 }
 
@@ -74,19 +74,25 @@ function allSubmodulesVisited(mod, mi, visited) {
 
 // ── Quiz Panel Component ────────────────────────────────────────────────────
 
-function QuizPanel({ questions, onSubmit, title, subtitle, passThreshold = 0.6 }) {
+function QuizPanel({ questions, onSubmit, title, subtitle, passThreshold = 0.6, lastResult, readOnly = false, attempts = [], onRetry, onNext }) {
+  // lastResult: { score, total, passed, answers: { "0": "ans", "1": "ans" ... } }
   const [answers, setAnswers] = useState({})
-  const [hintsUsed, setHintsUsed] = useState({}) // { qIdx: hintLevel }
+  const [hintsUsed, setHintsUsed] = useState({})
   const [submitted, setSubmitted] = useState(false)
   const [result, setResult] = useState(null)
 
+  // If we have lastResult and are in readOnly, show last answers with green/red
+  const showLast = readOnly && lastResult && lastResult.answers
+  const displayAnswers = showLast ? lastResult.answers : answers
+  const isSubmittedView = submitted || showLast
+
   const selectAnswer = (qIdx, value) => {
-    if (submitted) return
+    if (submitted || showLast) return
     setAnswers((prev) => ({ ...prev, [qIdx]: value }))
   }
 
   const revealHint = (qIdx) => {
-    if (submitted) return
+    if (submitted || showLast) return
     setHintsUsed((prev) => {
       const cur = prev[qIdx] || 0
       if (cur >= 3) return prev
@@ -96,25 +102,69 @@ function QuizPanel({ questions, onSubmit, title, subtitle, passThreshold = 0.6 }
 
   const handleSubmit = () => {
     let correct = 0
+    const answersToSave = {}
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i]
       const userAns = answers[i]
+      answersToSave[String(i)] = userAns || null
       if (userAns !== undefined && userAns === q.correct_answer) correct++
     }
     const total = questions.length
     const passed = total > 0 && (correct / total) >= passThreshold
     setResult({ correct, total, passed })
     setSubmitted(true)
-    onSubmit(correct, total, passed)
+    onSubmit(correct, total, passed, answersToSave)
+  }
+
+  const handleRetry = () => {
+    setSubmitted(false)
+    setResult(null)
+    setAnswers({})
+    setHintsUsed({})
+    if (onRetry) onRetry()
   }
 
   const allAnswered = questions.length > 0 && Object.keys(answers).length === questions.length
 
+  // Compute display result
+  const displayResult = showLast
+    ? { correct: lastResult.score, total: lastResult.total, passed: lastResult.passed }
+    : result
+
+  const isPerfect = displayResult && displayResult.correct === displayResult.total
+
   return (
     <div className="flex-1 flex flex-col w-full">
       <div className="px-8 py-4 border-b border-gray-100 bg-gray-50/80">
-        <span className="text-[11px] font-bold text-accent uppercase tracking-widest">{title}</span>
-        {subtitle && <p className="text-[12px] text-gray-400 mt-0.5">{subtitle}</p>}
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold text-accent uppercase tracking-widest">{title}</span>
+            {subtitle && <p className="text-[12px] text-gray-400 mt-0.5">{subtitle}</p>}
+          </div>
+          <div className="flex items-center gap-3">
+            {attempts.length > 0 && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-navy-900/5 border border-gray-200">
+                <span className="text-[10px] text-gray-500 font-semibold uppercase">Attempts</span>
+                <span className="text-[12px] font-bold text-accent">{attempts.length}</span>
+                <span className="text-[10px] text-gray-400">|</span>
+                <span className="text-[10px] text-gray-500 font-semibold uppercase">Best</span>
+                <span className="text-[12px] font-bold text-green-600">
+                  {Math.max(...attempts.map(a => a.score))}/{attempts[0]?.total || '?'}
+                </span>
+              </div>
+            )}
+            {displayResult && (
+              <div className="flex items-center gap-2">
+                <span className={`text-[13px] font-bold ${displayResult.passed ? 'text-green-600' : 'text-red-600'}`}>
+                  {displayResult.passed ? '✅' : '❌'} {displayResult.correct}/{displayResult.total}
+                </span>
+                <span className="text-[11px] text-gray-400">
+                  ({Math.round((displayResult.correct / displayResult.total) * 100)}%)
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="flex-1 px-8 py-6 overflow-y-auto">
@@ -122,34 +172,52 @@ function QuizPanel({ questions, onSubmit, title, subtitle, passThreshold = 0.6 }
           {questions.length === 0 && (
             <div className="text-center py-16">
               <div className="w-10 h-10 border-2 border-gray-300 border-t-accent rounded-full animate-spin-slow mx-auto mb-4" />
-              <p className="text-gray-400 text-[14px]">Generating questions…</p>
+              <p className="text-gray-400 text-[14px]">Loading questions…</p>
             </div>
           )}
 
           {questions.map((q, qIdx) => {
-            const userAns = answers[qIdx]
-            const isCorrect = submitted && userAns === q.correct_answer
-            const isWrong = submitted && userAns !== undefined && userAns !== q.correct_answer
+            const userAns = displayAnswers[showLast ? String(qIdx) : qIdx]
+            const isCorrect = isSubmittedView && userAns === q.correct_answer
+            const isWrong = isSubmittedView && userAns !== undefined && userAns !== null && userAns !== q.correct_answer
             const hintLevel = hintsUsed[qIdx] || 0
             const hints = q.hints || []
+            const difficulty = q.difficulty
 
             return (
               <div key={qIdx} className={`rounded-lg border p-5 transition-all ${
-                submitted
+                isSubmittedView
                   ? isCorrect ? 'border-green-300 bg-green-50/50'
                     : isWrong ? 'border-red-300 bg-red-50/50'
                     : 'border-gray-200 bg-gray-50/50'
                   : 'border-gray-200 bg-white'
               }`}>
                 <div className="flex items-start gap-3 mb-4">
-                  <span className="w-7 h-7 rounded-full bg-accent/10 border border-accent/20 text-accent flex items-center justify-center text-[11px] font-bold flex-shrink-0 mt-0.5">
-                    {qIdx + 1}
+                  <span className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 mt-0.5 ${
+                    isSubmittedView
+                      ? isCorrect ? 'bg-green-100 border border-green-300 text-green-700'
+                        : isWrong ? 'bg-red-100 border border-red-300 text-red-700'
+                        : 'bg-gray-100 border border-gray-200 text-gray-500'
+                      : 'bg-accent/10 border border-accent/20 text-accent'
+                  }`}>
+                    {isSubmittedView ? (isCorrect ? '✓' : isWrong ? '✗' : qIdx + 1) : qIdx + 1}
                   </span>
                   <div className="flex-1">
                     <p className="text-[14px] font-semibold text-gray-800 leading-relaxed">{q.question_text}</p>
-                    <span className="text-[10px] text-gray-400 uppercase font-bold mt-1 inline-block">
-                      {q.question_type === 'true_false' ? 'True / False' : 'Multiple Choice'}
-                    </span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] text-gray-400 uppercase font-bold">
+                        {q.question_type === 'true_false' ? 'True / False' : 'Multiple Choice'}
+                      </span>
+                      {difficulty && (
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase ${
+                          difficulty === 'easy' ? 'bg-green-100 text-green-700'
+                            : difficulty === 'hard' ? 'bg-red-100 text-red-700'
+                            : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {difficulty}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -157,13 +225,13 @@ function QuizPanel({ questions, onSubmit, title, subtitle, passThreshold = 0.6 }
                 <div className="space-y-2 mb-4 pl-10">
                   {(q.options || []).map((opt, oi) => {
                     const isSelected = userAns === opt
-                    const isCorrectOpt = submitted && opt === q.correct_answer
+                    const isCorrectOpt = isSubmittedView && opt === q.correct_answer
                     return (
                       <button key={oi}
                         onClick={() => selectAnswer(qIdx, opt)}
-                        disabled={submitted}
+                        disabled={isSubmittedView}
                         className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left text-[13px] border transition-all ${
-                          submitted
+                          isSubmittedView
                             ? isCorrectOpt ? 'border-green-400 bg-green-100 text-green-800 font-semibold'
                               : isSelected && !isCorrectOpt ? 'border-red-400 bg-red-100 text-red-700'
                               : 'border-gray-100 bg-gray-50 text-gray-500'
@@ -172,11 +240,11 @@ function QuizPanel({ questions, onSubmit, title, subtitle, passThreshold = 0.6 }
                         }`}
                       >
                         <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 text-[9px] ${
-                          submitted
+                          isSubmittedView
                             ? isCorrectOpt ? 'border-green-500 bg-green-500 text-white' : isSelected ? 'border-red-500 bg-red-500 text-white' : 'border-gray-300'
                             : isSelected ? 'border-accent bg-accent text-white' : 'border-gray-300'
                         }`}>
-                          {submitted ? (isCorrectOpt ? '✓' : isSelected ? '✗' : '') : (isSelected ? '●' : '')}
+                          {isSubmittedView ? (isCorrectOpt ? '✓' : isSelected ? '✗' : '') : (isSelected ? '●' : '')}
                         </span>
                         {opt}
                       </button>
@@ -185,26 +253,28 @@ function QuizPanel({ questions, onSubmit, title, subtitle, passThreshold = 0.6 }
                 </div>
 
                 {/* Hints */}
-                <div className="pl-10 flex items-center gap-2">
-                  {!submitted && hints.length > 0 && hintLevel < hints.length && (
-                    <button onClick={() => revealHint(qIdx)}
-                      className="text-[11px] text-amber-600 hover:text-amber-700 font-semibold border border-amber-200 bg-amber-50 px-2.5 py-1 rounded-full transition hover:bg-amber-100">
-                      💡 Hint {hintLevel + 1}
-                    </button>
-                  )}
-                  {hintLevel > 0 && (
-                    <div className="flex flex-col gap-1 flex-1">
-                      {hints.slice(0, hintLevel).map((h, hi) => (
-                        <div key={hi} className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-1.5">
-                          <span className="font-bold">Hint {hi + 1}:</span> {h}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                {!showLast && (
+                  <div className="pl-10 flex items-center gap-2">
+                    {!submitted && hints.length > 0 && hintLevel < hints.length && (
+                      <button onClick={() => revealHint(qIdx)}
+                        className="text-[11px] text-amber-600 hover:text-amber-700 font-semibold border border-amber-200 bg-amber-50 px-2.5 py-1 rounded-full transition hover:bg-amber-100">
+                        💡 Hint {hintLevel + 1}
+                      </button>
+                    )}
+                    {hintLevel > 0 && (
+                      <div className="flex flex-col gap-1 flex-1">
+                        {hints.slice(0, hintLevel).map((h, hi) => (
+                          <div key={hi} className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-1.5">
+                            <span className="font-bold">Hint {hi + 1}:</span> {h}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                {/* Correct answer reveal on submit */}
-                {submitted && isWrong && (
+                {/* Correct answer reveal */}
+                {isSubmittedView && isWrong && (
                   <div className="mt-3 pl-10 text-[12px] text-green-700">
                     Correct answer: <span className="font-semibold">{q.correct_answer}</span>
                   </div>
@@ -218,7 +288,32 @@ function QuizPanel({ questions, onSubmit, title, subtitle, passThreshold = 0.6 }
       {/* Submit / Result footer */}
       {questions.length > 0 && (
         <div className="flex items-center justify-between px-8 py-4 border-t border-gray-100 bg-gray-50/60 flex-shrink-0">
-          {!submitted ? (
+          {showLast ? (
+            <>
+              <div className="flex items-center gap-3">
+                <span className={`text-[14px] font-bold ${displayResult.passed ? 'text-green-600' : 'text-red-600'}`}>
+                  {displayResult.passed ? '✅ Passed!' : '❌ Not passed'}
+                </span>
+                <span className="text-[13px] text-gray-500">
+                  {displayResult.correct}/{displayResult.total} correct ({Math.round((displayResult.correct / displayResult.total) * 100)}%)
+                </span>
+              </div>
+              <div className="flex gap-2.5">
+                {!isPerfect && (
+                  <button onClick={handleRetry}
+                    className="px-5 py-2 rounded-lg text-[13px] font-semibold border border-amber-300 text-amber-600 hover:border-amber-400 hover:bg-amber-50 transition">
+                    🔄 Retake for 100%
+                  </button>
+                )}
+                {displayResult.passed && onNext && (
+                  <button onClick={onNext}
+                    className="px-6 py-2 rounded-lg text-[13px] font-bold bg-accent text-white hover:bg-accent2 shadow-glow transition">
+                    Next →
+                  </button>
+                )}
+              </div>
+            </>
+          ) : !submitted ? (
             <>
               <span className="text-[12px] text-gray-400">
                 {Object.keys(answers).length}/{questions.length} answered
@@ -239,12 +334,25 @@ function QuizPanel({ questions, onSubmit, title, subtitle, passThreshold = 0.6 }
                 </span>
                 <span className="text-[11px] text-gray-400">Need {Math.round(passThreshold * 100)}% to pass</span>
               </div>
-              {!result.passed && (
-                <button onClick={() => { setSubmitted(false); setResult(null); setAnswers({}); setHintsUsed({}) }}
-                  className="px-5 py-2 rounded-lg text-[13px] font-semibold border border-gray-300 text-gray-600 hover:border-gray-400 hover:bg-gray-50 transition">
-                  Retry Quiz
-                </button>
-              )}
+              <div className="flex gap-2.5">
+                {!result.passed ? (
+                  <button onClick={handleRetry}
+                    className="px-5 py-2 rounded-lg text-[13px] font-semibold border border-gray-300 text-gray-600 hover:border-gray-400 hover:bg-gray-50 transition">
+                    Retry Quiz
+                  </button>
+                ) : !isPerfect ? (
+                  <button onClick={handleRetry}
+                    className="px-5 py-2 rounded-lg text-[13px] font-semibold border border-amber-300 text-amber-600 hover:border-amber-400 hover:bg-amber-50 transition">
+                    🔄 Retake for 100%
+                  </button>
+                ) : null}
+                {result.passed && onNext && (
+                  <button onClick={onNext}
+                    className="px-6 py-2 rounded-lg text-[13px] font-bold bg-accent text-white hover:bg-accent2 shadow-glow transition">
+                    Next →
+                  </button>
+                )}
+              </div>
             </>
           )}
         </div>
@@ -266,19 +374,28 @@ export default function StudentCourseViewer() {
 
   const [flatNav, setFlatNav] = useState([])
   const [navIdx, setNavIdx] = useState(0)
-  const [visited, setVisited] = useState([])        // submodule keys that have been visited
-  const [modulesPassed, setModulesPassed] = useState([]) // mi indices where quiz passed
+  const [visited, setVisited] = useState([])
+  const [modulesPassed, setModulesPassed] = useState([])
   const [finalPassed, setFinalPassed] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState({})
-  const [quizQuestions, setQuizQuestions] = useState({}) // { mi: [...questions] } or { 'final': [...] }
+  const [quizQuestions, setQuizQuestions] = useState({})
   const [quizLoading, setQuizLoading] = useState({})
   const [completing, setCompleting] = useState(false)
+  const [testResults, setTestResults] = useState({}) // { "M1": {score, total, passed, answers}, "final": {...} }
+  const [testAttempts, setTestAttempts] = useState({}) // { "M1": [{score, total, passed}], "final": [...] }
+  const [questionsReady, setQuestionsReady] = useState(true)
+  const [lockedModalMi, setLockedModalMi] = useState(null) // module index for locked modal
+  const [retryingQuiz, setRetryingQuiz] = useState(null) // mi or 'final' — bypasses readOnly branch
   const bodyRef = useRef(null)
+  const pollRef = useRef(null)
 
   // ── Load enrollment data on mount ──────────────────────────────────────
   useEffect(() => {
     dispatch(loadEnrollmentData(enrollmentId))
-    return () => dispatch(clearEnrollmentData())
+    return () => {
+      dispatch(clearEnrollmentData())
+      if (pollRef.current) clearInterval(pollRef.current)
+    }
   }, [enrollmentId, dispatch])
 
   // ── Build flatNav and restore progress from enrollment ─────────────────
@@ -288,10 +405,15 @@ export default function StudentCourseViewer() {
       setFlatNav(buildFlatNav(mods))
       setNavIdx(0)
 
-      // Restore progress from server
       const progress = enrollmentData.progress || {}
       setVisited(progress.visited || [])
       setFinalPassed(!!progress.final_passed)
+      setTestResults(progress.test_results || {})
+      setTestAttempts(progress.test_attempts || {})
+
+      // Check questions_ready
+      const ready = progress.questions_ready !== false
+      setQuestionsReady(ready)
 
       // Convert module_tests_passed (module_ids) to module indices
       const passedIds = progress.module_tests_passed || []
@@ -300,8 +422,24 @@ export default function StudentCourseViewer() {
         if (passedIds.includes(mod.module_id)) passedIndices.push(mi)
       })
       setModulesPassed(passedIndices)
+
+      // If questions not ready, poll
+      if (!ready) {
+        pollRef.current = setInterval(async () => {
+          try {
+            const fresh = await fetchEnrollment(enrollmentId)
+            const p = fresh?.progress || {}
+            if (p.questions_ready) {
+              setQuestionsReady(true)
+              if (pollRef.current) clearInterval(pollRef.current)
+              // Reload full enrollment data
+              dispatch(loadEnrollmentData(enrollmentId))
+            }
+          } catch (e) { console.warn('Poll failed:', e) }
+        }, 3000)
+      }
     }
-  }, [enrollmentData])
+  }, [enrollmentData, enrollmentId, dispatch])
 
   // ── MathJax re-render ──────────────────────────────────────────────────
   useEffect(() => {
@@ -322,7 +460,6 @@ export default function StudentCourseViewer() {
     } catch (e) { console.warn('Visit track failed:', e) }
   }, [enrollmentId, visited])
 
-  // Track visit when navIdx changes to a slide
   useEffect(() => {
     if (!enrollmentData?.modules || flatNav.length === 0) return
     const item = flatNav[navIdx]
@@ -333,7 +470,7 @@ export default function StudentCourseViewer() {
     }
   }, [navIdx, flatNav, enrollmentData, trackVisit])
 
-  // ── Loading state ─────────────────────────────────────────────────────
+  // ── "Your course is being ready" screen ───────────────────────────────
   if (enrollmentStatus === 'loading') {
     return (
       <div className="min-h-screen bg-navy-800 flex items-center justify-center">
@@ -361,6 +498,22 @@ export default function StudentCourseViewer() {
     )
   }
 
+  if (!questionsReady) {
+    return (
+      <div className="min-h-screen bg-navy-800 flex items-center justify-center">
+        <div className="text-center px-8 max-w-md">
+          <div className="text-[56px] mb-5 animate-float">⚙️</div>
+          <h2 className="font-display text-[22px] font-bold text-white mb-3">Your course is being prepared</h2>
+          <p className="text-navy-300 text-[14px] mb-2">Generating quizzes and assessments for your selected modules…</p>
+          <p className="text-navy-400 text-[12px] mb-6">This usually takes a few seconds.</p>
+          <div className="w-48 h-1.5 bg-navy-700 rounded-full overflow-hidden mx-auto">
+            <div className="h-full bg-accent rounded-full animate-pulse" style={{ width: '60%' }} />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const data = enrollmentData
   const mods = data.modules || []
   const currentItem = flatNav[navIdx]
@@ -368,13 +521,12 @@ export default function StudentCourseViewer() {
 
   // ── Progress calculation (visit-based) ────────────────────────────────
   const totalSubmodules = mods.reduce((acc, mod) => acc + (mod.submodules || []).length, 0)
-  const totalItems = totalSubmodules + mods.length + 1 // submodules + module quizzes + final
+  const totalItems = totalSubmodules + mods.length + 1
   const completedItems = visited.length + modulesPassed.length + (finalPassed ? 1 : 0)
   const pct = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0
 
   const videos = currentMod?.youtube_videos || []
 
-  // ── Can the user mark the course done? ────────────────────────────────
   const allModulesComplete = mods.every((mod, mi) => {
     const allVisited = allSubmodulesVisited(mod, mi, visited)
     const testPassed = modulesPassed.includes(mi)
@@ -423,9 +575,7 @@ export default function StudentCourseViewer() {
   const navSlide = (dir) => {
     const next = navIdx + dir
     if (next < 0 || next >= flatNav.length) return
-    // Don't navigate into a locked module
     if (isNavTargetLocked(next)) return
-    // If moving to quiz, load questions
     const nextItem = flatNav[next]
     if (nextItem?.type === 'quiz') loadQuiz(nextItem.mi)
     if (nextItem?.type === 'final') loadFinalQuiz()
@@ -442,8 +592,8 @@ export default function StudentCourseViewer() {
 
   // ── Quiz loading helpers ──────────────────────────────────────────────
 
-  const loadQuiz = async (mi) => {
-    if (quizQuestions[mi] || quizLoading[mi]) return
+  const loadQuiz = async (mi, force = false) => {
+    if ((!force && quizQuestions[mi]) || quizLoading[mi]) return
     const mod = mods[mi]
     if (!mod) return
     setQuizLoading((p) => ({ ...p, [mi]: true }))
@@ -454,8 +604,8 @@ export default function StudentCourseViewer() {
     setQuizLoading((p) => ({ ...p, [mi]: false }))
   }
 
-  const loadFinalQuiz = async () => {
-    if (quizQuestions['final'] || quizLoading['final']) return
+  const loadFinalQuiz = async (force = false) => {
+    if ((!force && quizQuestions['final']) || quizLoading['final']) return
     setQuizLoading((p) => ({ ...p, final: true }))
     try {
       const qs = await fetchFinalQuestions(enrollmentId)
@@ -466,22 +616,63 @@ export default function StudentCourseViewer() {
 
   // ── Quiz submit handlers ──────────────────────────────────────────────
 
-  const handleModuleQuizSubmit = async (mi, correct, total, passed) => {
+  const handleModuleQuizSubmit = async (mi, correct, total, passed, answersMap) => {
     const mod = mods[mi]
     if (!mod) return
     try {
-      await submitModuleTest(enrollmentId, mod.module_id, correct, total)
+      await submitModuleTest(enrollmentId, mod.module_id, correct, total, answersMap)
     } catch (e) { console.warn('Module test submit failed:', e) }
+    // Store results locally
+    setTestResults((prev) => ({
+      ...prev,
+      [mod.module_id]: { score: correct, total, passed, answers: answersMap },
+    }))
+    // Track attempts
+    setTestAttempts((prev) => {
+      const existing = prev[mod.module_id] || []
+      return { ...prev, [mod.module_id]: [...existing, { score: correct, total, passed }] }
+    })
     if (passed && !modulesPassed.includes(mi)) {
       setModulesPassed((prev) => [...prev, mi])
     }
+    // Clear retrying flag so readOnly branch can take over again
+    if (retryingQuiz === mi) setRetryingQuiz(null)
   }
 
-  const handleFinalQuizSubmit = async (correct, total, passed) => {
+  const handleFinalQuizSubmit = async (correct, total, passed, answersMap) => {
     try {
-      await submitFinalTest(enrollmentId, correct, total)
+      await submitFinalTest(enrollmentId, correct, total, answersMap)
     } catch (e) { console.warn('Final test submit failed:', e) }
+    setTestResults((prev) => ({
+      ...prev,
+      final: { score: correct, total, passed, answers: answersMap },
+    }))
+    // Track attempts
+    setTestAttempts((prev) => {
+      const existing = prev['final'] || []
+      return { ...prev, final: [...existing, { score: correct, total, passed }] }
+    })
     if (passed) setFinalPassed(true)
+    // Clear retrying flag
+    if (retryingQuiz === 'final') setRetryingQuiz(null)
+  }
+
+  // ── Quiz retrial (allow retaking even if passed but not 100%) ─────────
+  const handleModuleQuizRetry = (mi) => {
+    const mod = mods[mi]
+    if (!mod) return
+    // Clear cached questions AND test result so QuizPanel fully resets
+    setQuizQuestions((prev) => { const next = { ...prev }; delete next[mi]; return next })
+    setTestResults((prev) => { const next = { ...prev }; delete next[mod.module_id]; return next })
+    setRetryingQuiz(mi)
+    loadQuiz(mi, true)
+  }
+
+  const handleFinalQuizRetry = () => {
+    setQuizQuestions((prev) => { const next = { ...prev }; delete next['final']; return next })
+    setTestResults((prev) => { const next = { ...prev }; delete next['final']; return next })
+    setRetryingQuiz('final')
+    loadFinalQuiz(true)
   }
 
   const handleDone = async () => {
@@ -507,13 +698,15 @@ export default function StudentCourseViewer() {
   const refsMod = currentItem?.type === 'refs' ? mods[currentItem.mi] : null
   const refs = refsMod?.references || []
 
-  // Check if current quiz is for a module where all subs are visited
   const quizMi = currentItem?.type === 'quiz' ? currentItem.mi : null
   const quizMod = quizMi !== null ? mods[quizMi] : null
   const quizReady = quizMod ? allSubmodulesVisited(quizMod, quizMi, visited) : false
 
-  // Is the next button going into a locked module?
   const nextLocked = navIdx + 1 < flatNav.length && isNavTargetLocked(navIdx + 1)
+
+  // Get last test result for current module quiz
+  const moduleTestResult = quizMod ? testResults[quizMod.module_id] : null
+  const finalTestResult = testResults['final'] || null
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#f8f9fa' }}>
@@ -559,13 +752,14 @@ export default function StudentCourseViewer() {
             const locked = !isModuleUnlocked(mi, modulesPassed)
             const testPassed = modulesPassed.includes(mi)
             const allVisited = allSubmodulesVisited(mod, mi, visited)
+            const modResult = testResults[mod.module_id]
 
             return (
               <div key={mi} className={`border-b border-navy-800/80 ${locked ? 'opacity-50' : ''}`}>
                 <button
-                  onClick={() => !locked && setSidebarOpen((p) => ({ ...p, [mi]: !isOpen }))}
+                  onClick={() => locked ? setLockedModalMi(mi) : setSidebarOpen((p) => ({ ...p, [mi]: !isOpen }))}
                   className={`w-full flex items-center gap-2 px-4 py-3 text-left transition select-none ${
-                    locked ? 'cursor-not-allowed' : 'hover:bg-navy-800/60 cursor-pointer'
+                    locked ? 'cursor-pointer' : 'hover:bg-navy-800/60 cursor-pointer'
                   }`}
                 >
                   {locked ? (
@@ -608,7 +802,7 @@ export default function StudentCourseViewer() {
                         <span className="text-[10px]">📎</span> Module References
                       </button>
                     )}
-                    {/* Module quiz link */}
+                    {/* Module quiz link with score */}
                     <button onClick={() => jumpQuiz(mi)}
                       className={`w-full flex items-center gap-2 pl-9 pr-4 py-1.5 text-left text-[11px] transition-colors ${
                         currentItem?.type === 'quiz' && currentItem.mi === mi
@@ -620,7 +814,14 @@ export default function StudentCourseViewer() {
                       disabled={!allVisited && !testPassed}
                     >
                       <span className="text-[10px]">{testPassed ? '✅' : allVisited ? '📝' : '🔒'}</span>
-                      Module Quiz {testPassed ? '' : allVisited ? '' : '(visit all lessons)'}
+                      <span className="flex-1">
+                        Module Quiz {!testPassed && !allVisited ? '(visit all lessons)' : ''}
+                      </span>
+                      {modResult && (
+                        <span className={`text-[10px] font-mono ${modResult.passed ? 'text-success' : 'text-red-400'}`}>
+                          {modResult.score}/{modResult.total}
+                        </span>
+                      )}
                     </button>
                   </div>
                 )}
@@ -628,7 +829,7 @@ export default function StudentCourseViewer() {
             )
           })}
 
-          {/* Final assessment link */}
+          {/* Final assessment link with score */}
           <div className={`border-b border-navy-800/80 ${!allModulesComplete ? 'opacity-50' : ''}`}>
             <button
               onClick={() => allModulesComplete && jumpFinal()}
@@ -640,7 +841,14 @@ export default function StudentCourseViewer() {
               disabled={!allModulesComplete}
             >
               <span className="text-[12px]">{finalPassed ? '🏆' : allModulesComplete ? '📋' : '🔒'}</span>
-              Final Assessment {finalPassed ? '(Passed)' : !allModulesComplete ? '(complete all modules)' : ''}
+              <span className="flex-1">
+                Final Assessment {finalPassed ? '(Passed)' : !allModulesComplete ? '(complete all modules)' : ''}
+              </span>
+              {finalTestResult && (
+                <span className={`text-[10px] font-mono ${finalTestResult.passed ? 'text-success' : 'text-red-400'}`}>
+                  {finalTestResult.score}/{finalTestResult.total}
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -781,31 +989,31 @@ export default function StudentCourseViewer() {
                   </button>
                 </div>
               </div>
-            ) : modulesPassed.includes(quizMi) ? (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center px-8 max-w-md">
-                  <div className="text-[48px] mb-4">✅</div>
-                  <h3 className="font-display text-[18px] font-bold text-gray-700 mb-2">Module Quiz Passed!</h3>
-                  <p className="text-gray-400 text-[14px] mb-5">
-                    You've already passed the quiz for <span className="font-semibold text-gray-600">{quizMod.title}</span>.
-                  </p>
-                  <div className="flex gap-3 justify-center">
-                    <button onClick={() => navSlide(-1)} disabled={navIdx <= 0}
-                      className="px-5 py-2 rounded-lg text-[13px] font-semibold border border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50 disabled:opacity-30 transition">← Prev</button>
-                    <button onClick={() => navSlide(1)} disabled={navIdx >= flatNav.length - 1 || nextLocked}
-                      className="px-5 py-2 rounded-lg text-[13px] font-bold bg-accent text-white hover:bg-accent2 disabled:opacity-30 disabled:cursor-not-allowed shadow-glow transition">
-                      Next →
-                    </button>
-                  </div>
-                </div>
-              </div>
+            ) : modulesPassed.includes(quizMi) && retryingQuiz !== quizMi ? (
+              /* Show last results with green/red marks when already passed — allow retrial */
+              <QuizPanel
+                questions={quizQuestions[quizMi] || []}
+                title={`📝 Module Quiz — ${quizMod.title}`}
+                subtitle="5 questions · 4 easy, 1 hard · 60% to pass"
+                passThreshold={0.6}
+                lastResult={moduleTestResult}
+                readOnly={true}
+                attempts={testAttempts[quizMod.module_id] || []}
+                onRetry={() => handleModuleQuizRetry(quizMi)}
+                onNext={() => navSlide(1)}
+                onSubmit={() => {}}
+              />
             ) : (
               <QuizPanel
                 questions={quizQuestions[quizMi] || []}
                 title={`📝 Module Quiz — ${quizMod.title}`}
-                subtitle="5 questions · Answer all to submit · 60% to pass"
+                subtitle="5 questions · 4 easy, 1 hard · 60% to pass"
                 passThreshold={0.6}
-                onSubmit={(correct, total, passed) => handleModuleQuizSubmit(quizMi, correct, total, passed)}
+                lastResult={moduleTestResult}
+                attempts={testAttempts[quizMod?.module_id] || []}
+                onRetry={retryingQuiz === quizMi ? () => handleModuleQuizRetry(quizMi) : undefined}
+                onNext={moduleTestResult?.passed ? () => navSlide(1) : undefined}
+                onSubmit={(correct, total, passed, answersMap) => handleModuleQuizSubmit(quizMi, correct, total, passed, answersMap)}
               />
             )}
           </>
@@ -822,29 +1030,39 @@ export default function StudentCourseViewer() {
                   <p className="text-gray-400 text-[14px]">Complete all module quizzes to unlock the final assessment.</p>
                 </div>
               </div>
-            ) : finalPassed ? (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center px-8 max-w-md">
-                  <div className="text-[56px] mb-4">🏆</div>
-                  <h3 className="font-display text-[22px] font-bold text-gray-800 mb-2">Course Complete!</h3>
-                  <p className="text-gray-400 text-[14px] mb-6">
-                    Congratulations! You've passed the final assessment.
-                  </p>
-                  {canFinish && (
+            ) : finalPassed && retryingQuiz !== 'final' ? (
+              <div className="flex-1 flex flex-col w-full">
+                {/* Show last results for final, then the completion section */}
+                <QuizPanel
+                  questions={quizQuestions['final'] || []}
+                  title="📋 Final Assessment"
+                  subtitle="15 questions · Mixed difficulty · 60% to pass"
+                  passThreshold={0.6}
+                  lastResult={finalTestResult}
+                  readOnly={true}
+                  attempts={testAttempts['final'] || []}
+                  onRetry={handleFinalQuizRetry}
+                  onSubmit={() => {}}
+                />
+                {canFinish && (
+                  <div className="px-8 py-5 border-t border-gray-100 bg-green-50 flex items-center justify-center">
                     <button onClick={handleDone} disabled={completing}
                       className="px-8 py-3 rounded-lg text-[14px] font-bold bg-success text-white hover:bg-green-500 disabled:opacity-50 shadow-glow transition">
-                      {completing ? 'Completing…' : '✓ Mark Course as Done'}
+                      {completing ? 'Completing…' : '🏆 Mark Course as Done'}
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             ) : (
               <QuizPanel
                 questions={quizQuestions['final'] || []}
                 title="📋 Final Assessment"
-                subtitle="15 questions covering all modules · 60% to pass"
+                subtitle="15 questions · Mixed difficulty · 60% to pass"
                 passThreshold={0.6}
-                onSubmit={(correct, total, passed) => handleFinalQuizSubmit(correct, total, passed)}
+                lastResult={finalTestResult}
+                attempts={testAttempts['final'] || []}
+                onRetry={retryingQuiz === 'final' ? handleFinalQuizRetry : undefined}
+                onSubmit={(correct, total, passed, answersMap) => handleFinalQuizSubmit(correct, total, passed, answersMap)}
               />
             )}
           </>
@@ -866,6 +1084,26 @@ export default function StudentCourseViewer() {
           </div>
         )}
       </div>
+
+      {/* ── Locked Module Modal ──────────────────────────────────────────── */}
+      {lockedModalMi !== null && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center" onClick={() => setLockedModalMi(null)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="relative bg-white rounded-xl shadow-2xl px-8 py-7 max-w-sm w-full mx-4 text-center animate-fade-in" onClick={(e) => e.stopPropagation()}>
+            <div className="text-[44px] mb-4">🔒</div>
+            <h3 className="font-display text-[18px] font-bold text-gray-800 mb-2">Module Locked</h3>
+            <p className="text-gray-500 text-[14px] mb-6 leading-relaxed">
+              Complete the submodules of the previous module and pass its quiz to unlock
+              <span className="font-semibold text-gray-700"> {mods[lockedModalMi]?.title || 'this module'}</span>.
+            </p>
+            <button
+              onClick={() => setLockedModalMi(null)}
+              className="px-6 py-2.5 rounded-lg text-[13px] font-bold bg-accent text-white hover:bg-accent2 shadow-glow transition">
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
